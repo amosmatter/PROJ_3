@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "adc.h": "c",
+        "main.h": "c",
+        "stm32u5xx_hal.h": "c",
+        "stm32u5xx_hal_conf.h": "c",
+        "stm32u5xx_ll_utils.h": "c",
+        "stm32u5xx_ll_ucpd.h": "c",
+        "stm32u5xx_ll_adc.h": "c",
+        "ucpd.h": "c",
+        "spi.h": "c",
+        "stm32u5xx_hal_spi.h": "c",
+        "stm32u575xx.h": "c",
+        "new": "c",
+        "task_imu.h": "c",
+        "spi_common.h": "c",
+        "math.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled",
+}

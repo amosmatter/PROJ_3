@@ -1,0 +1,2 @@
+../Core/Src/task_GPS.c:11:19:rcv_str	24	static
+../Core/Src/task_GPS.c:29:6:GPS_task	608	static

@@ -1,0 +1,5 @@
+../Core/Src/spi_common.c:12:6:delay_ms	16	static
+../Core/Src/spi_common.c:17:6:delay_us	40	static
+../Core/Src/spi_common.c:34:19:SPI_read_burst_implicit	48	static
+../Core/Src/spi_common.c:52:19:SPI_write_burst_implicit	32	static
+../Core/Src/spi_common.c:70:19:SPI_write_burst_explicit	40	static
