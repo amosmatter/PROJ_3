@@ -67,8 +67,8 @@ all: main-build
 main-build: PROJ_3.elf secondary-outputs
 
 # Tool invocations
-PROJ_3.elf PROJ_3.map: $(OBJS) $(USER_OBJS) C:\Users\amosm\STM32CubeIDE\workspace_1.14.0\PROJ3.zip_expanded\PROJ_3\STM32U575ZITXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "PROJ_3.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\amosm\STM32CubeIDE\workspace_1.14.0\PROJ3.zip_expanded\PROJ_3\STM32U575ZITXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="PROJ_3.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+PROJ_3.elf PROJ_3.map: $(OBJS) $(USER_OBJS) C:\Users\amosm\STM32CubeIDE\workspace_1.13.0\PROJ_3\STM32U575ZITXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "PROJ_3.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\amosm\STM32CubeIDE\workspace_1.13.0\PROJ_3\STM32U575ZITXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="PROJ_3.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

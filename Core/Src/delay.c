@@ -11,7 +11,8 @@
 //           for return with bx, 1 cycle bne
 // Loop: 1 cycle sub, 3 cylces bne
 __attribute__((naked))
-void delay(uint32_t us){
+void delay_cycles(uint32_t val)
+{
 	asm(
 			".syntax unified\n"
 			"delay_loop:\n"

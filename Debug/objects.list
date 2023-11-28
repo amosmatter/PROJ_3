@@ -1,5 +1,6 @@
 "./Core/Src/IMU_DMP_init.o"
 "./Core/Src/app_freertos.o"
+"./Core/Src/delay.o"
 "./Core/Src/main.o"
 "./Core/Src/spi_common.o"
 "./Core/Src/stm32u5xx_hal_msp.o"

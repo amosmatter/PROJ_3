@@ -65,7 +65,7 @@ osThreadId_t GPS_TaskHandle;
 const osThreadAttr_t GPS_TaskAttributes = {
     .name = "GPSTask",
     .priority = (osPriority_t)osPriorityNormal,
-    .stack_size = 256 * 4,
+    .stack_size = 256 * 16,
 };
 
 /* USER CODE END Variables */

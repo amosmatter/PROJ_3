@@ -28,14 +28,14 @@
  * The wait time is calculated: time/us = (val * 4000000 + 8)/fcpu
  * @param val
  */
-void delay(uint32_t val);
+void delay_cycles(uint32_t val);
 
 
 /**
  * Does a busy-wait during given value in us.
  * @param us
  */
-static inline void delay_us(uint32_t us){ delay(DELAY_MICROSECONDS(us));}
+static inline void delay_us(uint32_t us){ delay_cycles(DELAY_MICROSECONDS(us));}
 
 
 
