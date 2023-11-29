@@ -1,6 +1,0 @@
-../Core/Src/IMU_DMP_init.c:18:27:ICM_20948_int_enable_raw_data_ready	24	static
-../Core/Src/IMU_DMP_init.c:42:6:debugPrintStatus	16	static
-../Core/Src/IMU_DMP_init.c:100:20:ICM_20948_mag_who_i_am	24	static
-../Core/Src/IMU_DMP_init.c:150:20:ICM_20948_startup_magnetometer	24	static
-../Core/Src/IMU_DMP_init.c:195:20:ICM_20948_startup_default	32	static
-../Core/Src/IMU_DMP_init.c:336:20:ICM_20948_initialize_DMP	120	static
