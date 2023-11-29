@@ -4,8 +4,6 @@
 ../Lib/FATFS/ff.c:662:13:st_dword	1
 ../Lib/FATFS/ff.c:692:12:dbc_1st	5
 ../Lib/FATFS/ff.c:712:12:dbc_2nd	7
-../Lib/FATFS/ff.c:895:12:lock_volume	2
-../Lib/FATFS/ff.c:920:13:unlock_volume	5
 ../Lib/FATFS/ff.c:1055:16:sync_window	5
 ../Lib/FATFS/ff.c:1077:16:move_window	4
 ../Lib/FATFS/ff.c:1108:16:sync_fs	5
@@ -30,9 +28,9 @@
 ../Lib/FATFS/ff.c:3138:12:get_ldnumber	9
 ../Lib/FATFS/ff.c:3291:13:check_fs	19
 ../Lib/FATFS/ff.c:3331:13:find_volume	10
-../Lib/FATFS/ff.c:3385:16:mount_volume	40
-../Lib/FATFS/ff.c:3613:16:validate	8
-../Lib/FATFS/ff.c:3657:9:f_mount	6
+../Lib/FATFS/ff.c:3385:16:mount_volume	39
+../Lib/FATFS/ff.c:3613:16:validate	7
+../Lib/FATFS/ff.c:3657:9:f_mount	5
 ../Lib/FATFS/ff.c:3717:9:f_open	32
 ../Lib/FATFS/ff.c:3914:9:f_read	22
 ../Lib/FATFS/ff.c:4014:9:f_write	25
@@ -48,5 +46,3 @@
 ../Lib/FATFS/ff.c:4962:9:f_unlink	14
 ../Lib/FATFS/ff.c:5056:9:f_mkdir	11
 ../Lib/FATFS/ff.c:5140:9:f_rename	18
-../Lib/FATFS/ff.c:5739:16:create_partition	14
-../Lib/FATFS/ff.c:5882:9:f_mkfs	75

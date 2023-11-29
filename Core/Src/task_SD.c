@@ -1,47 +1,58 @@
+
+#include <stdio.h>
 #include "main.h"
 #include "FATFS/ff.h"
 #include "cmsis_os2.h"
-
-char workBuffer[512]; // Work area (should be aligned to the sector size)
-
+#include "FATFS/diskio.h"
 void SD_task(void *pvParameters)
 {
-    FRESULT mountResult;
     FATFS fs;
-
-    mountResult = f_mount(&fs, "", 1); // Mounts the default drive
-    if (mountResult != FR_OK)
+    FRESULT res;
+	FATFS* fs_ptr = &fs;
+	printf("entered SD task\n");
+    res = f_mount(fs_ptr, "", 1); // Mounts the default drive
+    while (res != FR_OK)
     {
-        printf("SD failed to mount. Error: %d\n", mountResult);
-        // Handle mount failure
-        if (mountResult == FR_NO_FILESYSTEM)
-        {
 
-            FRESULT formatResult = f_mkfs("", NULL, workBuffer, sizeof(workBuffer));
-            if (formatResult != FR_OK)
-            {
-                // Handle formatting error
-                printf("SD failed to format. Error: %d\n", formatResult);
-            }
-        }
+        printf("SD failed to mount. Error: %d\n", res);
+        osDelay(100);
+        res = f_mount(&fs, "", 1); // Mounts the default drive
+
     }
+
+
+
+    uint32_t freeClust;
+
+	res = f_getfree("", &freeClust, &fs_ptr); // Warning! This fills fs.n_fatent and fs.csize!
+	while(res != FR_OK) {
+        osDelay(100);
+		printf("f_getfree() failed, res = %d\r\n", res);
+		res = f_getfree("", &freeClust, &fs_ptr); // Warning! This fills fs.n_fatent and fs.csize!
+	}
+
+
+
+
 
     FILINFO fileInfo;
     FRESULT statResult;
 
     statResult = f_stat("/", &fileInfo);
-    if (statResult != FR_OK)
+    while (statResult != FR_OK)
     {
         printf("SD failed to stat. Error: %d\n", statResult);
         // Handle error
-    }
-    else
-    {
-        printf("SD stat result: %s\n", fileInfo.fname);
-        // Drive is running, proceed to access its contents
+        osDelay(100);
+
+        statResult = f_stat("/", &fileInfo);
+
     }
 
-    char line[128] = {};
+     printf("SD stat result: %s\n", fileInfo.fname);
+        // Drive is running, proceed to access its contents
+
+
     while (1)
     {
         printf("sd_task\n");

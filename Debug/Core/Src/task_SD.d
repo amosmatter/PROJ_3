@@ -33,7 +33,8 @@ Core/Src/task_SD.o: ../Core/Src/task_SD.c ../Core/Inc/main.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_uart_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h \
  ../Lib/FATFS/ff.h ../Lib/FATFS/ffconf.h \
- ../Middlewares/Third_Party/CMSIS/RTOS2/Include/cmsis_os2.h
+ ../Middlewares/Third_Party/CMSIS/RTOS2/Include/cmsis_os2.h \
+ ../Lib/FATFS/diskio.h
 ../Core/Inc/main.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
 ../Core/Inc/stm32u5xx_hal_conf.h:
@@ -71,3 +72,4 @@ Core/Src/task_SD.o: ../Core/Src/task_SD.c ../Core/Inc/main.h \
 ../Lib/FATFS/ff.h:
 ../Lib/FATFS/ffconf.h:
 ../Middlewares/Third_Party/CMSIS/RTOS2/Include/cmsis_os2.h:
+../Lib/FATFS/diskio.h:

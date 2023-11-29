@@ -1,4 +1,0 @@
-../Lib/FATFS/ffsystem.c:70:5:ff_mutex_create	1
-../Lib/FATFS/ffsystem.c:109:6:ff_mutex_delete	1
-../Lib/FATFS/ffsystem.c:140:5:ff_mutex_take	1
-../Lib/FATFS/ffsystem.c:171:6:ff_mutex_give	1

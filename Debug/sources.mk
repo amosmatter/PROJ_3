@@ -24,6 +24,7 @@ C_DEPS :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
+Core/ThreadSafe \
 Drivers/STM32U5xx_HAL_Driver/Src \
 Lib/BME280 \
 Lib/FATFS \
