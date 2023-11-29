@@ -10938,80 +10938,80 @@ LOAD C:/ST/STM32CubeIDE_1.13.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.ext
  .debug_line    0x000000000002aba8      0x5fe ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.o
  .debug_line    0x000000000002b1a6      0x698 ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_1.o
 
-.debug_str      0x0000000000000000   0x15f369
+.debug_str      0x0000000000000000   0x15f368
  .debug_str     0x0000000000000000   0x145fa3 ./Core/Src/app_freertos.o
                                      0x146aa2 (size before relaxing)
  .debug_str     0x0000000000145fa3     0x1bba ./Core/Src/main.o
                                      0x140b1c (size before relaxing)
- .debug_str     0x0000000000147b5d     0x1561 ./Core/Src/spi_diskio.o
-                                     0x14078c (size before relaxing)
- .debug_str     0x00000000001490be      0x3e8 ./Core/Src/stm32u5xx_hal_msp.o
+ .debug_str     0x0000000000147b5d     0x1560 ./Core/Src/spi_diskio.o
+                                     0x14078b (size before relaxing)
+ .debug_str     0x00000000001490bd      0x3e8 ./Core/Src/stm32u5xx_hal_msp.o
                                      0x1403c4 (size before relaxing)
- .debug_str     0x00000000001494a6       0xf7 ./Core/Src/stm32u5xx_hal_timebase_tim.o
+ .debug_str     0x00000000001494a5       0xf7 ./Core/Src/stm32u5xx_hal_timebase_tim.o
                                      0x13f95a (size before relaxing)
- .debug_str     0x000000000014959d      0x217 ./Core/Src/stm32u5xx_it.o
+ .debug_str     0x000000000014959c      0x217 ./Core/Src/stm32u5xx_it.o
                                      0x13f3cd (size before relaxing)
- .debug_str     0x00000000001497b4     0x14ec ./Core/Src/syscalls.o
+ .debug_str     0x00000000001497b3     0x14ec ./Core/Src/syscalls.o
                                        0x9397 (size before relaxing)
- .debug_str     0x000000000014aca0       0x6b ./Core/Src/sysmem.o
+ .debug_str     0x000000000014ac9f       0x6b ./Core/Src/sysmem.o
                                        0x5aa9 (size before relaxing)
- .debug_str     0x000000000014ad0b       0xd4 ./Core/Src/system_stm32u5xx.o
+ .debug_str     0x000000000014ad0a       0xd4 ./Core/Src/system_stm32u5xx.o
                                      0x13ebb9 (size before relaxing)
- .debug_str     0x000000000014addf      0x240 ./Core/Src/task_SD.o
+ .debug_str     0x000000000014adde      0x240 ./Core/Src/task_SD.o
                                      0x13fcd2 (size before relaxing)
- .debug_str     0x000000000014b01f       0x35 ./Core/Startup/startup_stm32u575zitxq.o
+ .debug_str     0x000000000014b01e       0x35 ./Core/Startup/startup_stm32u575zitxq.o
                                          0x6f (size before relaxing)
- .debug_str     0x000000000014b054     0x151c ./Core/ThreadSafe/newlib_lock_glue.o
+ .debug_str     0x000000000014b053     0x151c ./Core/ThreadSafe/newlib_lock_glue.o
                                        0x9014 (size before relaxing)
- .debug_str     0x000000000014c570      0x703 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.o
+ .debug_str     0x000000000014c56f      0x703 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.o
                                      0x13f989 (size before relaxing)
- .debug_str     0x000000000014cc73      0x395 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_cortex.o
+ .debug_str     0x000000000014cc72      0x395 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_cortex.o
                                      0x13f79a (size before relaxing)
- .debug_str     0x000000000014d008      0x2cb ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_gpio.o
+ .debug_str     0x000000000014d007      0x2cb ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_gpio.o
                                      0x13ebde (size before relaxing)
- .debug_str     0x000000000014d2d3      0xf29 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_i2c.o
+ .debug_str     0x000000000014d2d2      0xf29 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_i2c.o
                                      0x13fe15 (size before relaxing)
- .debug_str     0x000000000014e1fc      0x118 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_i2c_ex.o
+ .debug_str     0x000000000014e1fb      0x118 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_i2c_ex.o
                                      0x13f019 (size before relaxing)
- .debug_str     0x000000000014e314      0x673 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_icache.o
+ .debug_str     0x000000000014e313      0x673 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_icache.o
                                      0x13eefc (size before relaxing)
- .debug_str     0x000000000014e987      0x33a ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_pwr.o
+ .debug_str     0x000000000014e986      0x33a ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_pwr.o
                                      0x13ed4d (size before relaxing)
- .debug_str     0x000000000014ecc1      0x709 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_pwr_ex.o
+ .debug_str     0x000000000014ecc0      0x709 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_pwr_ex.o
                                      0x13f2f9 (size before relaxing)
- .debug_str     0x000000000014f3ca     0x12a9 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_rcc.o
+ .debug_str     0x000000000014f3c9     0x12a9 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_rcc.o
                                      0x1402ae (size before relaxing)
- .debug_str     0x0000000000150673     0x2538 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_rcc_ex.o
+ .debug_str     0x0000000000150672     0x2538 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_rcc_ex.o
                                      0x141511 (size before relaxing)
- .debug_str     0x0000000000152bab      0x504 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_spi.o
+ .debug_str     0x0000000000152baa      0x504 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_spi.o
                                      0x13f48d (size before relaxing)
- .debug_str     0x00000000001530af       0xe3 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_spi_ex.o
+ .debug_str     0x00000000001530ae       0xe3 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_spi_ex.o
                                      0x13f01d (size before relaxing)
- .debug_str     0x0000000000153192      0xf66 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_tim.o
+ .debug_str     0x0000000000153191      0xf66 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_tim.o
                                      0x13fffc (size before relaxing)
- .debug_str     0x00000000001540f8      0x9c2 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_tim_ex.o
+ .debug_str     0x00000000001540f7      0x9c2 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_tim_ex.o
                                      0x13fe74 (size before relaxing)
- .debug_str     0x0000000000154aba      0x910 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_uart.o
+ .debug_str     0x0000000000154ab9      0x910 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_uart.o
                                      0x13f880 (size before relaxing)
- .debug_str     0x00000000001553ca      0x2f2 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_uart_ex.o
+ .debug_str     0x00000000001553c9      0x2f2 ./Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_uart_ex.o
                                      0x13f332 (size before relaxing)
- .debug_str     0x00000000001556bc     0x3c14 ./Lib/FATFS/ff.o
+ .debug_str     0x00000000001556bb     0x3c14 ./Lib/FATFS/ff.o
                                        0xb107 (size before relaxing)
- .debug_str     0x00000000001592d0     0x2fb6 ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.o
+ .debug_str     0x00000000001592cf     0x2fb6 ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.o
                                      0x147bba (size before relaxing)
- .debug_str     0x000000000015c286      0x176 ./Middlewares/Third_Party/FreeRTOS/Source/list.o
+ .debug_str     0x000000000015c285      0x176 ./Middlewares/Third_Party/FreeRTOS/Source/list.o
                                        0xad8e (size before relaxing)
- .debug_str     0x000000000015c3fc      0x848 ./Middlewares/Third_Party/FreeRTOS/Source/queue.o
+ .debug_str     0x000000000015c3fb      0x848 ./Middlewares/Third_Party/FreeRTOS/Source/queue.o
                                        0xd435 (size before relaxing)
- .debug_str     0x000000000015cc44     0x10d4 ./Middlewares/Third_Party/FreeRTOS/Source/tasks.o
+ .debug_str     0x000000000015cc43     0x10d4 ./Middlewares/Third_Party/FreeRTOS/Source/tasks.o
                                        0xdf4e (size before relaxing)
- .debug_str     0x000000000015dd18      0x5ed ./Middlewares/Third_Party/FreeRTOS/Source/timers.o
+ .debug_str     0x000000000015dd17      0x5ed ./Middlewares/Third_Party/FreeRTOS/Source/timers.o
                                        0xd9c4 (size before relaxing)
- .debug_str     0x000000000015e305      0xed2 ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/port.o
+ .debug_str     0x000000000015e304      0xed2 ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/port.o
                                        0xa29e (size before relaxing)
- .debug_str     0x000000000015f1d7       0xaa ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.o
+ .debug_str     0x000000000015f1d6       0xaa ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.o
                                        0x765e (size before relaxing)
- .debug_str     0x000000000015f281       0xe8 ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_1.o
+ .debug_str     0x000000000015f280       0xe8 ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_1.o
                                        0xbfc9 (size before relaxing)
 
 .debug_frame    0x0000000000000000     0xad60
