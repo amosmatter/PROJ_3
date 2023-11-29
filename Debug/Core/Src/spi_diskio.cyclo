@@ -1,0 +1,17 @@
+../Core/Src/spi_diskio.c:94:6:SPI_Timer_On	1
+../Core/Src/spi_diskio.c:99:9:SPI_Timer_Status	1
+../Core/Src/spi_diskio.c:104:7:get_fattime	1
+../Core/Src/spi_diskio.c:126:6:xchg_spi	1
+../Core/Src/spi_diskio.c:138:6:rcvr_spi_multi	2
+../Core/Src/spi_diskio.c:152:6:xmit_spi_multi	1
+../Core/Src/spi_diskio.c:167:5:wait_ready	3
+../Core/Src/spi_diskio.c:194:6:despiselect	1
+../Core/Src/spi_diskio.c:207:5:spiselect	2
+../Core/Src/spi_diskio.c:224:5:rcvr_datablock	4
+../Core/Src/spi_diskio.c:253:5:xmit_datablock	4
+../Core/Src/spi_diskio.c:281:6:send_cmd	10
+../Core/Src/spi_diskio.c:327:9:disk_initialize	21
+../Core/Src/spi_diskio.c:383:10:disk_status	2
+../Core/Src/spi_diskio.c:398:10:disk_read	11
+../Core/Src/spi_diskio.c:437:10:disk_write	14
+../Core/Src/spi_diskio.c:478:10:disk_ioctl	27

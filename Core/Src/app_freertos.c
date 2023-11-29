@@ -28,6 +28,7 @@
 #include "task_PTH.h"
 #include "task_IMU.h"
 #include "task_GPS.h"
+#include "task_SD.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,6 +68,14 @@ const osThreadAttr_t GPS_TaskAttributes = {
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 256 * 16,
 };
+
+osThreadId_t SD_TaskHandle;
+const osThreadAttr_t SD_TaskAttributes = {
+    .name = "SDTask",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 1024 * 32,
+};
+
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -118,7 +127,8 @@ void MX_FREERTOS_Init(void) {
   /* add threads, ... */
   // PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
   // IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
-  GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
+  //GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
+  GPS_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

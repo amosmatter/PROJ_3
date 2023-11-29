@@ -1,7 +1,7 @@
 ../Core/Src/task_GPS.c:12:26:gps_rcv_line	4
 ../Core/Src/task_GPS.c:30:8:get_len_of_cmd	7
-../Core/Src/task_GPS.c:51:26:gps_send_line	3
-../Core/Src/task_GPS.c:82:19:set_normal_mode	1
-../Core/Src/task_GPS.c:86:19:get_software_version	1
-../Core/Src/task_GPS.c:91:19:get_nmea_intervall	5
-../Core/Src/task_GPS.c:129:6:GPS_task	3
+../Core/Src/task_GPS.c:50:26:gps_send_line	3
+../Core/Src/task_GPS.c:81:19:set_normal_mode	1
+../Core/Src/task_GPS.c:85:19:get_software_version	1
+../Core/Src/task_GPS.c:90:19:get_nmea_intervall	5
+../Core/Src/task_GPS.c:126:6:GPS_task	3

@@ -47,7 +47,8 @@ Core/Src/app_freertos.o: ../Core/Src/app_freertos.c \
  ../Lib/ICM_20948/src/util/AK09916_ENUMERATIONS.h \
  ../Lib/ICM_20948/src/util/ICM_20948_DMP.h \
  ../Lib/ICM_20948/src/util/ICM_20948_ENUMERATIONS.h \
- ../Lib/ICM_20948/src/util/ICM_20948_REGISTERS.h ../Core/Inc/task_GPS.h
+ ../Lib/ICM_20948/src/util/ICM_20948_REGISTERS.h ../Core/Inc/task_GPS.h \
+ ../Core/Inc/task_SD.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
@@ -100,3 +101,4 @@ Core/Src/app_freertos.o: ../Core/Src/app_freertos.c \
 ../Lib/ICM_20948/src/util/ICM_20948_ENUMERATIONS.h:
 ../Lib/ICM_20948/src/util/ICM_20948_REGISTERS.h:
 ../Core/Inc/task_GPS.h:
+../Core/Inc/task_SD.h:

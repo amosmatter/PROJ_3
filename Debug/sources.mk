@@ -26,6 +26,7 @@ Core/Src \
 Core/Startup \
 Drivers/STM32U5xx_HAL_Driver/Src \
 Lib/BME280 \
+Lib/FATFS \
 Lib/ICM_20948/src/util \
 Lib/minmea-master \
 Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
