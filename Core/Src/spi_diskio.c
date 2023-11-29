@@ -29,7 +29,7 @@
 
 #include <time.h>
 #define _USE_WRITE 1
-#define _USE_IOCTL 2
+#define _USE_IOCTL 1
 
 
 //Make sure you set #define SPI as some hspix in main.h
