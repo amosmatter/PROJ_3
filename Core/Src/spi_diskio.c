@@ -45,7 +45,7 @@ extern SPI_HandleTypeDef SPI;
 	} /* Set SCLK = slow, 125 KBits/s*/
 #define FCLK_FAST()                                                                         \
 	{                                                                                       \
-		MODIFY_REG(SPI.Instance->CFG1, SPI_BAUDRATEPRESCALER_256, SPI_BAUDRATEPRESCALER_4); \
+		MODIFY_REG(SPI.Instance->CFG1, SPI_BAUDRATEPRESCALER_256, SPI_BAUDRATEPRESCALER_BYPASS); \
 	} /* Set SCLK = fast, 4 MBits/s */
 
 #define CS_HIGH()                                                      \
@@ -196,8 +196,8 @@ static int wait_ready(		  /* 1:Ready, 0:Timeout */
 static void despiselect(void)
 {
 	CS_HIGH();		/* Set CS# high */
+	SPI.Instance->CFG2 &= ~SPI_CFG2_AFCNTR;
 	xchg_spi(0xFF); /* Dummy clock (force DO hi-z for multiple slave SPI) */
-	SPI.Instance->CR1 &= ~SPI_CR1_SPE;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -206,8 +206,9 @@ static void despiselect(void)
 
 static int spiselect(void) /* 1:OK, 0:Timeout */
 {
-	SPI.Instance->CR1 |= SPI_CR1_IOLOCK;
-	SPI.Instance->CR1 |= SPI_CR1_SPE;
+
+	SPI.Instance->CFG2 |= SPI_CFG2_AFCNTR; // Lock Clock and MOSI in between data transfers
+
 	CS_LOW();		/* Set CS# low */
 	xchg_spi(0xFF); /* Dummy clock (force DO enabled) */
 	if (wait_ready(500))

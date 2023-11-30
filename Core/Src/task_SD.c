@@ -4,6 +4,9 @@
 #include "FATFS/ff.h"
 #include "cmsis_os2.h"
 #include "FATFS/diskio.h"
+
+char filebuffer[2048];
+
 void SD_task(void *pvParameters)
 {
     FATFS fs;
@@ -11,6 +14,7 @@ void SD_task(void *pvParameters)
     FRESULT res;
     DIR dir;
     FILINFO fileInfo;
+    FIL file;
 
 	printf("\n\n\nentered SD task\n");
     res = f_mount(fs_ptr, "", 1); // Mounts the default drive
@@ -42,6 +46,49 @@ void SD_task(void *pvParameters)
         // Print the file/folder name
         printf("%s\n", fileInfo.fname);
     }
+
+    res = f_mkdir("/test");
+    if (res != FR_OK)
+    {
+        printf("Failed to make directory. Error code: %d\n", res);
+        return -1;
+    }
+
+    res = f_opendir(&dir, "/test"); // Replace "/" with your desired directory path
+    if (res != FR_OK) {
+        printf("Failed to open directory. Error code: %d\n", res);
+        return -1;
+    }
+
+    // Open or create a file named "data.csv"
+    res = f_open(&file, "data.csv", FA_CREATE_ALWAYS | FA_WRITE);
+    if (res != FR_OK) {
+        printf("Failed to open/create file. Error code: %d\n", res);
+        return -1;
+    }
+
+    // Write header to the file
+    sprintf(filebuffer, "test, test1, test2\n");
+    UINT bytes_written;
+    res = f_write(&file, filebuffer, strlen(filebuffer), &bytes_written);
+    if (res != FR_OK) {
+        printf("Failed to write to file. Error code: %d\n", res);
+        f_close(&file);
+        return -1;
+    }
+
+    // Write some example data to the file
+    sprintf(filebuffer, "value1, value2, value3\n");
+    res = f_write(&file, filebuffer, strlen(filebuffer), &bytes_written);
+    if (res != FR_OK) {
+        printf("Failed to write to file. Error code: %d\n", res);
+        f_close(&file);
+        return -1;
+    }
+
+    // Close the file
+    f_close(&file);
+
 
     while (1)
     {
