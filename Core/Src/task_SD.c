@@ -7,9 +7,12 @@
 void SD_task(void *pvParameters)
 {
     FATFS fs;
-    FRESULT res;
 	FATFS* fs_ptr = &fs;
-	printf("entered SD task\n");
+    FRESULT res;
+    DIR dir;
+    FILINFO fileInfo;
+
+	printf("\n\n\nentered SD task\n");
     res = f_mount(fs_ptr, "", 1); // Mounts the default drive
     while (res != FR_OK)
     {
@@ -22,36 +25,23 @@ void SD_task(void *pvParameters)
 
 
 
-    uint32_t freeClust;
-
-	res = f_getfree("", &freeClust, &fs_ptr); // Warning! This fills fs.n_fatent and fs.csize!
-	while(res != FR_OK) {
-        osDelay(100);
-		printf("f_getfree() failed, res = %d\r\n", res);
-		res = f_getfree("", &freeClust, &fs_ptr); // Warning! This fills fs.n_fatent and fs.csize!
-	}
-
-
-
-
-
-    FILINFO fileInfo;
-    FRESULT statResult;
-
-    statResult = f_stat("/", &fileInfo);
-    while (statResult != FR_OK)
-    {
-        printf("SD failed to stat. Error: %d\n", statResult);
-        // Handle error
-        osDelay(100);
-
-        statResult = f_stat("/", &fileInfo);
-
+    // Open the directory
+    res = f_opendir(&dir, "/"); // Replace "/" with your desired directory path
+    if (res != FR_OK) {
+        printf("Failed to open directory. Error code: %d\n", res);
+        return -1;
     }
 
-     printf("SD stat result: %s\n", fileInfo.fname);
-        // Drive is running, proceed to access its contents
 
+
+    printf("Listing contents of the directory:\n");
+    while (1) {
+        res = f_readdir(&dir, &fileInfo);
+        if (res != FR_OK || fileInfo.fname[0] == 0) break; // Break on error or end of directory
+
+        // Print the file/folder name
+        printf("%s\n", fileInfo.fname);
+    }
 
     while (1)
     {

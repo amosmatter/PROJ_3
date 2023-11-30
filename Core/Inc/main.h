@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.h
+ * @brief          : Header for main.c file.
+ *                   This file contains the common defines of the application.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define SD_nCS_GPIO_Port GPIOF
 #define RPI_nCS_Pin GPIO_PIN_14
 #define RPI_nCS_GPIO_Port GPIOF
+#define DEBUG_TRIGGER_Pin GPIO_PIN_0
+#define DEBUG_TRIGGER_GPIO_Port GPIOG
 #define PTH_nCS_Pin GPIO_PIN_11
 #define PTH_nCS_GPIO_Port GPIOE
 #define LED_RED_Pin GPIO_PIN_2
@@ -89,6 +91,28 @@ void Error_Handler(void);
 #define LED_READY_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+
+#ifndef DEBUG
+#define DEBUG
+#endif
+
+
+#ifdef DEBUG
+#define DEBUG_PRINT(...) { printf(__VA_ARGS__);}
+
+#define DEBUG_TRIGGER()                                                            \
+  {                                                                                \
+    HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_SET);   \
+    HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_RESET); \
+  }
+#else
+#define DEBUG_PRINT(...) {}
+#define DEBUG_TRIGGER()
+
+#endif
+
+#define BIT(n) (1UL << (n))
+
 
 /* USER CODE END Private defines */
 

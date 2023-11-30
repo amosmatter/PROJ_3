@@ -15,7 +15,7 @@
 
 #ifndef FCPU
 #warning FCPU not defined. Assuming 8MHz
-#define FCPU (8000000)
+#define FCPU (48000000)
 #endif
 
 // This macro does the conversion from us to the number of
