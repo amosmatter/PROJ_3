@@ -27,6 +27,9 @@
 #include "FATFS/ff.h"
 #include "FATFS/diskio.h"
 
+#include "common_task_defs.h"
+
+
 #include <time.h>
 #define _USE_WRITE 1
 #define _USE_IOCTL 1
@@ -195,9 +198,11 @@ static int wait_ready(		  /* 1:Ready, 0:Timeout */
 
 static void despiselect(void)
 {
+
 	CS_HIGH();		/* Set CS# high */
 	SPI.Instance->CFG2 &= ~SPI_CFG2_AFCNTR;
 	xchg_spi(0xFF); /* Dummy clock (force DO hi-z for multiple slave SPI) */
+	osMutexRelease(SPI_Lock);
 }
 
 /*-----------------------------------------------------------------------*/
@@ -206,7 +211,7 @@ static void despiselect(void)
 
 static int spiselect(void) /* 1:OK, 0:Timeout */
 {
-
+	osMutexAcquire(SPI_Lock,osWaitForever);
 	SPI.Instance->CFG2 |= SPI_CFG2_AFCNTR; // Lock Clock and MOSI in between data transfers
 
 	CS_LOW();		/* Set CS# low */

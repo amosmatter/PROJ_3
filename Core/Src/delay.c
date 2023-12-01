@@ -6,6 +6,12 @@
  */
 #include "delay.h"
 
+osStatus_t delay_ms(uint32_t ms)
+{
+	osDelay(ms);
+}
+
+
 // This function waits for 1/fcpu * ( N * 4 + 8 )
 // Overhead: 4 cylcles for call with bl, 3 cycles
 //           for return with bx, 1 cycle bne
@@ -21,3 +27,5 @@ void delay_cycles(uint32_t val)
 			"bx lr\n"           // 3 cylces
 	);
 }
+
+

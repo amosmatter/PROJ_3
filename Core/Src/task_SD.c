@@ -16,7 +16,7 @@ void SD_task(void *pvParameters)
     FILINFO fileInfo;
     FIL file;
 
-	printf("\n\n\nentered SD task\n");
+	printf("\n\n\n entered SD task\n");
     res = f_mount(fs_ptr, "", 1); // Mounts the default drive
     while (res != FR_OK)
     {

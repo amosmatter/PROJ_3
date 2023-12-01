@@ -14,7 +14,8 @@
         "new": "c",
         "task_imu.h": "c",
         "spi_common.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "stdatomic.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
 }

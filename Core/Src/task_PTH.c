@@ -11,7 +11,7 @@
 #include "main.h"
 #include "BME280/bme280.h"
 
-
+#include "delay.h"
 #include "spi_common.h"
 extern SPI_HandleTypeDef SPI; // from main.c
 
@@ -131,14 +131,6 @@ static int8_t get_humidity(uint32_t period, struct bme280_dev *dev)
 
 void PTH_task(void *pvParameters)
 {
-
-
-		HAL_GPIO_WritePin(PTH_nCS_GPIO_Port, PTH_nCS_Pin, GPIO_PIN_RESET); // Set CS pin LOW to select the slave
-		bme280_delay_us(5, NULL);
-
-		HAL_GPIO_WritePin(PTH_nCS_GPIO_Port, PTH_nCS_Pin, GPIO_PIN_SET); // Set CS pin LOW to select the slave
-		bme280_delay_us(5, NULL);
-
 
         int8_t rslt;
         uint32_t period;

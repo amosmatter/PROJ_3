@@ -5,13 +5,12 @@
  *      Author: zihlmalb
  */
 
-#ifndef B3A5C413_D3B2_4F9E_BA6F_BB9DB5891870
-#define B3A5C413_D3B2_4F9E_BA6F_BB9DB5891870
 
 #ifndef TTS_OLD_DELAY_H_
 #define TTS_OLD_DELAY_H_
 
 #include <stdint.h>
+#include "cmsis_os2.h"
 
 #ifndef FCPU
 #warning FCPU not defined. Assuming 8MHz
@@ -36,10 +35,6 @@ void delay_cycles(uint32_t val);
  * @param us
  */
 static inline void delay_us(uint32_t us){ delay_cycles(DELAY_MICROSECONDS(us));}
-
-
+osStatus_t delay_ms(uint32_t ms);
 
 #endif /* TTS_OLD_DELAY_H_ */
-
-
-#endif /* B3A5C413_D3B2_4F9E_BA6F_BB9DB5891870 */

@@ -25,6 +25,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+
+#include "common_task_defs.h"
 #include "task_PTH.h"
 #include "task_IMU.h"
 #include "task_GPS.h"
@@ -50,49 +52,61 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
-osThreadId_t PTH_TaskHandle;
 const osThreadAttr_t PTH_TaskAttributes = {
     .name = "PTHTask",
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 256 * 4};
 
-osThreadId_t IMU_TaskHandle;
 const osThreadAttr_t IMU_TaskAttributes = {
     .name = "IMUTask",
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 256 * 4,
 };
 
-osThreadId_t GPS_TaskHandle;
 const osThreadAttr_t GPS_TaskAttributes = {
     .name = "GPSTask",
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 256 * 16,
 };
 
-osThreadId_t SD_TaskHandle;
 const osThreadAttr_t SD_TaskAttributes = {
     .name = "SDTask",
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 1024 * 32,
 };
 
-osThreadId_t AS_TaskHandle;
 const osThreadAttr_t AS_TaskAttributes = {
     .name = "AirspeedTask",
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 1024 * 32,
 };
 
+osThreadId_t PTH_TaskHandle;
+osThreadId_t IMU_TaskHandle;
+osThreadId_t GPS_TaskHandle;
+osThreadId_t SD_TaskHandle;
+osThreadId_t AS_TaskHandle;
+
+osMessageQueueId_t imu_data_queue_handle;
+osMessageQueueId_t gps_data_queue_handle;
+osMessageQueueId_t pth_data_queue_handle;
+osMessageQueueId_t airsp_data_queue_handle;
+osMessageQueueId_t airsp_data_queue_handle;
+
+osMutexId_t SPI_Lock;
+
+
+
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
+
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
+
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -133,11 +147,11 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  // PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
+  PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
   // IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
   //GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
   //GPS_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
-  AS_TaskHandle = osThreadNew(airspeed_task, NULL, &SD_TaskAttributes);
+  //AS_TaskHandle = osThreadNew(airspeed_task, NULL, &SD_TaskAttributes);
 
   /* USER CODE END RTOS_THREADS */
 

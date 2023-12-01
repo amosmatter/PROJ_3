@@ -87,12 +87,12 @@ void airspeed_task(void *pvParameters)
             DEBUG_PRINT("Comm error! \n");
             continue;
         }
-        else if (data->flags & 3 == 2)
+        else if (data.flags & 3 == 2)
         {
             DEBUG_PRINT("Stale Data! \n");
             continue;
         }
-        else if (data->flags & 3 == 3)
+        else if (data.flags & 3 == 3)
         {
             DEBUG_PRINT("Fault detected!\n");
             continue;
