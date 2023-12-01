@@ -29,6 +29,8 @@
 #include "task_IMU.h"
 #include "task_GPS.h"
 #include "task_SD.h"
+#include "task_AIRSPEED.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -76,6 +78,12 @@ const osThreadAttr_t SD_TaskAttributes = {
     .stack_size = 1024 * 32,
 };
 
+osThreadId_t AS_TaskHandle;
+const osThreadAttr_t AS_TaskAttributes = {
+    .name = "AirspeedTask",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 1024 * 32,
+};
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -128,7 +136,9 @@ void MX_FREERTOS_Init(void) {
   // PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
   // IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
   //GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
-  GPS_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
+  //GPS_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
+  AS_TaskHandle = osThreadNew(airspeed_task, NULL, &SD_TaskAttributes);
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

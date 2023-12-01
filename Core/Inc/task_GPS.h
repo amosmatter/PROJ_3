@@ -10,5 +10,4 @@
 
 void GPS_task(void *pvParameters);
 
-
 #endif /* INC_TASK_GPS_H_ */

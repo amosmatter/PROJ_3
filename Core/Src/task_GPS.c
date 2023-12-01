@@ -17,7 +17,6 @@ static HAL_StatusTypeDef gps_rcv_line(char *buffer, uint16_t length, uint32_t ti
     for (i = 0; i < length; i++)
     {
         ret = HAL_UART_Receive(&GPS_UART, (uint8_t *)&buffer[i], 1, timeout);
-
         if (buffer[i] == '\n' || ret != HAL_OK)
         {
             break;
@@ -217,8 +216,7 @@ void GPS_task(void *pvParameters)
 
             struct minmea_sentence_gga sentence;
             minmea_parse_gga(&sentence, line);
-            bool valid = minmea_check(line, false);
-
+            bool valid = minmea_check(line, false); 
             if (valid)
             {
                 printf("Latitude: %d\n", sentence.latitude.value);
