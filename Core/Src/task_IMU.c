@@ -11,7 +11,7 @@
 #include "ICM_20948/src/util/ICM_20948_C.h"
 
 #include "spi_common.h"
-
+#include "common_task_defs.h"
 #include "main.h"
 
 #include "task_IMU.h"
@@ -71,6 +71,40 @@ void ValuePrint(const char *label, double value) // From ChatGPT
 	printf("%*s: %d.%03d\n", padding + labelLength, label, intValue, fractionalPart);
 }
 
+typedef struct
+{
+  int32_t Q1;
+  int32_t Q2;
+  int32_t Q3;
+  int16_t Accuracy;
+} imu_raw_data_t;
+
+void quat_to_ypr(imu_raw_data_t * quats, imu_data_t * data)
+{
+	double q1 = ((double)quats->Q1) / 1073741824.0; // Convert to double. Divide by 2^30
+	double q2 = ((double)quats->Q2) / 1073741824.0; // Convert to double. Divide by 2^30
+	double q3 = ((double)quats->Q3) / 1073741824.0; // Convert to double. Divide by 2^30
+	double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));
+
+	double q2sqr = q2 * q2;
+
+	// roll (x-axis rotation)
+	double t0 = +2.0 * (q0 * q1 + q2 * q3);
+	double t1 = +1.0 - 2.0 * (q1 * q1 + q2sqr);
+	data-> roll = atan2(t0, t1) * 180.0 / M_PI;
+
+	// pitch (y-axis rotation)
+	double t2 = +2.0 * (q0 * q2 - q3 * q1);
+	t2 = t2 > 1.0 ? 1.0 : t2;
+	t2 = t2 < -1.0 ? -1.0 : t2;
+	data->  pitch = asin(t2) * 180.0 / M_PI;
+
+	// yaw (z-axis rotation)
+	double t3 = +2.0 * (q0 * q3 + q1 * q2);
+	double t4 = +1.0 - 2.0 * (q2sqr + q3 * q3);
+	data-> yaw = atan2(t3, t4) * 180.0 / M_PI;
+}
+
 void IMU_task(void *pvParameters)
 {
 	ICM_20948_Device_t myICM;
@@ -122,45 +156,14 @@ void IMU_task(void *pvParameters)
 
 	while (1)
 	{
-		icm_20948_DMP_data_t data;
-		ICM_20948_Status_e status = inv_icm20948_read_dmp_data(&myICM, &data);
-		if ((status == ICM_20948_Stat_Ok) || (status == ICM_20948_Stat_FIFOMoreDataAvail)) // Was valid data available?
+		icm_20948_DMP_data_t fifo_buf;
+		ICM_20948_Status_e status = inv_icm20948_read_dmp_data(&myICM, &fifo_buf);
+		if ((status == ICM_20948_Stat_Ok) && (fifo_buf.header & DMP_header_bitmap_Quat9) > 0) // Was valid data available?
 		{
-			if ((data.header & DMP_header_bitmap_Quat9) > 0)
-			{
-
-				double q1 = ((double)data.Quat9.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30
-				double q2 = ((double)data.Quat9.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30
-				double q3 = ((double)data.Quat9.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30
-				double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));
-
-				double q2sqr = q2 * q2;
-
-				// roll (x-axis rotation)
-				double t0 = +2.0 * (q0 * q1 + q2 * q3);
-				double t1 = +1.0 - 2.0 * (q1 * q1 + q2sqr);
-				double roll = atan2(t0, t1) * 180.0 / M_PI;
-
-				// pitch (y-axis rotation)
-				double t2 = +2.0 * (q0 * q2 - q3 * q1);
-				t2 = t2 > 1.0 ? 1.0 : t2;
-				t2 = t2 < -1.0 ? -1.0 : t2;
-				double pitch = asin(t2) * 180.0 / M_PI;
-
-				// yaw (z-axis rotation)
-				double t3 = +2.0 * (q0 * q3 + q1 * q2);
-				double t4 = +1.0 - 2.0 * (q2sqr + q3 * q3);
-				double yaw = atan2(t3, t4) * 180.0 / M_PI;
-
-				ValuePrint("Roll", roll);
-				ValuePrint("Pitch", pitch);
-				ValuePrint("Yaw", yaw);
-			}
-		}
-		if (status != ICM_20948_Stat_FIFOMoreDataAvail)
-		{
-
-			delay_ms(100);
+			imu_data_t data;
+			quat_to_ypr(&fifo_buf.Quat9.Data, &data);
+			osMessageQueuePut(imu_data_queue_handle, &data, 0, 0);
+			osSemaphoreAcquire(imu_timing_semaphore_handle, osWaitForever);
 		}
 	}
 }

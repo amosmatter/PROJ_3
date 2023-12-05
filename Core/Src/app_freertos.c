@@ -32,7 +32,7 @@
 #include "task_GPS.h"
 #include "task_SD.h"
 #include "task_AIRSPEED.h"
-
+#include "task_processing.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +60,7 @@ const osThreadAttr_t PTH_TaskAttributes = {
 const osThreadAttr_t IMU_TaskAttributes = {
     .name = "IMUTask",
     .priority = (osPriority_t)osPriorityNormal,
-    .stack_size = 256 * 4,
+    .stack_size = 1024 * 32,
 };
 
 const osThreadAttr_t GPS_TaskAttributes = {
@@ -81,32 +81,39 @@ const osThreadAttr_t AS_TaskAttributes = {
     .stack_size = 1024 * 32,
 };
 
+const osThreadAttr_t proc_TaskAttributes = {
+    .name = "Processing Task",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 1024 * 32,
+};
+
 osThreadId_t PTH_TaskHandle;
 osThreadId_t IMU_TaskHandle;
 osThreadId_t GPS_TaskHandle;
 osThreadId_t SD_TaskHandle;
 osThreadId_t AS_TaskHandle;
+osThreadId_t proc_TaskHandle;
 
 osMessageQueueId_t imu_data_queue_handle;
 osMessageQueueId_t gps_data_queue_handle;
 osMessageQueueId_t pth_data_queue_handle;
 osMessageQueueId_t airsp_data_queue_handle;
-osMessageQueueId_t airsp_data_queue_handle;
 
 osMutexId_t SPI_Lock;
 
-
+osSemaphoreId_t imu_timing_semaphore_handle;
+osSemaphoreId_t gps_timing_semaphore_handle;
+osSemaphoreId_t pth_timing_semaphore_handle;
+osSemaphoreId_t airsp_timing_semaphore_handle;
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
-
+    .name = "defaultTask",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 128 * 4};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -118,21 +125,30 @@ void StartDefaultTask(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
-void MX_FREERTOS_Init(void) {
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
+void MX_FREERTOS_Init(void)
+{
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
+  SPI_Lock = osMutexNew(NULL);
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
+  
+  imu_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
+  gps_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
+  pth_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
+  airsp_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
+
+
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -140,7 +156,10 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  pth_data_queue_handle = osMessageQueueNew(PTH_DATA_QUEUE_SIZE, PTH_DATA_SIZE, NULL);
+  imu_data_queue_handle = osMessageQueueNew(IMU_DATA_QUEUE_SIZE, IMU_DATA_SIZE, NULL);
+  airsp_data_queue_handle = osMessageQueueNew(AIRSPEED_DATA_QUEUE_SIZE, AIRSPEED_DATA_SIZE, NULL);
+
   /* USER CODE END RTOS_QUEUES */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
@@ -148,17 +167,20 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
-  // IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
-  //GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
-  //GPS_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
-  //AS_TaskHandle = osThreadNew(airspeed_task, NULL, &SD_TaskAttributes);
+  proc_TaskHandle = osThreadNew(processing_task, NULL, &PTH_TaskAttributes);
+
+  IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
+  // AS_TaskHandle = osThreadNew(airspeed_task, NULL, &SD_TaskAttributes);
+
+  
+  // GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
+  // GPS_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
 
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
@@ -183,4 +205,3 @@ void StartDefaultTask(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-

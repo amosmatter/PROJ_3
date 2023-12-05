@@ -13,16 +13,9 @@
 
 #include "delay.h"
 #include "spi_common.h"
+#include "common_task_defs.h"
+#include "task_PTH.h"
 extern SPI_HandleTypeDef SPI; // from main.c
-
-#define SAMPLE_COUNT  UINT8_C(50)
-
-/******************************************************************************/
-/*!                Static variable definition                                 */
-
-/*! Variable that holds the I2C device address or SPI chip selection */
-static uint8_t dev_addr;
-
 
 /**
  * Wrappers for the library
@@ -30,19 +23,19 @@ static uint8_t dev_addr;
  */
 BME280_INTF_RET_TYPE bme280_spi_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
-	 HAL_StatusTypeDef ret = SPI_read_burst_implicit(intf_ptr, reg_addr,reg_data,length,PTH_nCS_GPIO_Port,PTH_nCS_Pin);
-	 return (ret == HAL_OK)? BME280_OK: BME280_E_COMM_FAIL;
+    HAL_StatusTypeDef ret = SPI_read_burst_implicit(intf_ptr, reg_addr, reg_data, length, PTH_nCS_GPIO_Port, PTH_nCS_Pin);
+    return (ret == HAL_OK) ? BME280_OK : BME280_E_COMM_FAIL;
 }
 
 BME280_INTF_RET_TYPE bme280_spi_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
-	 HAL_StatusTypeDef ret = SPI_write_burst_explicit(intf_ptr, reg_addr,reg_data,length,PTH_nCS_GPIO_Port,PTH_nCS_Pin);
-	 return (ret == HAL_OK)? BME280_OK: BME280_E_COMM_FAIL;
+    HAL_StatusTypeDef ret = SPI_write_burst_explicit(intf_ptr, reg_addr, reg_data, length, PTH_nCS_GPIO_Port, PTH_nCS_Pin);
+    return (ret == HAL_OK) ? BME280_OK : BME280_E_COMM_FAIL;
 }
 
 void bme280_delay_us(uint32_t period, void *intf_ptr)
 {
-	delay_us(period);
+    delay_us(period);
 }
 
 /*!
@@ -86,107 +79,102 @@ void bme280_error_codes_print_result(const char api_name[], int8_t rslt)
 
 void init_bme280(struct bme280_dev *dev, SPI_HandleTypeDef *hspi)
 {
-
 }
 
-static int8_t get_humidity(uint32_t period, struct bme280_dev *dev)
+static int8_t get_pth_data(uint32_t period, struct bme280_dev *dev, struct bme280_data *comp_data)
 {
     int8_t rslt = BME280_E_NULL_PTR;
-    int8_t idx = 0;
     uint8_t status_reg;
-    struct bme280_data comp_data;
 
-
-
-    while (idx < SAMPLE_COUNT)
+    while (1)
     {
         rslt = bme280_get_regs(BME280_REG_STATUS, &status_reg, 1, dev);
         bme280_error_codes_print_result("bme280_get_regs", rslt);
 
         if (status_reg & BME280_STATUS_MEAS_DONE)
         {
-            /* Measurement time delay given to read sample */
-            dev->delay_us(period, dev->intf_ptr);
-
+            //delay_ms(period / 1000 + 5);
             /* Read compensated data */
-            rslt = bme280_get_sensor_data(BME280_HUM, &comp_data, dev);
+            rslt = bme280_get_sensor_data(BME280_HUM | BME280_PRESS | BME280_TEMP, comp_data, dev);
+
             bme280_error_codes_print_result("bme280_get_sensor_data", rslt);
-
-#ifndef BME280_DOUBLE_ENABLE
-            comp_data.humidity = comp_data.humidity / 1000;
-#endif
-
-#ifdef BME280_DOUBLE_ENABLE
-            printf("Humidity[%d]:   %lf %%RH\n", idx, comp_data.humidity);
-#else
-            printf("Humidity[%d]:   %lu %%RH\n", idx, (long unsigned int)comp_data.humidity);
-#endif
-            idx++;
+            return rslt;
         }
+        delay_ms(1);
     }
-
-    return rslt;
 }
-
 
 void PTH_task(void *pvParameters)
 {
 
-        int8_t rslt;
-        uint32_t period;
-        struct bme280_dev dev;
-        struct bme280_settings settings;
+    int8_t rslt;
+    uint32_t period;
+    struct bme280_dev dev;
+    struct bme280_settings settings;
+    struct bme280_data comp;
+
+    dev.read = bme280_spi_read;
+    dev.write = bme280_spi_write;
+    dev.intf = BME280_SPI_INTF;
+    dev.intf_ptr = &SPI;
+    dev.delay_us = bme280_delay_us;
+
+    rslt = bme280_init(&dev);
+    bme280_error_codes_print_result("bme280_init", rslt);
+
+    /* Always read the current settings before writing, especially when all the configuration is not modified */
+    rslt = bme280_get_sensor_settings(&settings, &dev);
+    bme280_error_codes_print_result("bme280_get_sensor_settings", rslt);
+
+    // IIR Filter coefficient and measurement standby period to change power consumption and
+    // step response time
+    settings.filter = BME280_FILTER_COEFF_16;
+    settings.standby_time = BME280_STANDBY_TIME_0_5_MS;
 
 
-        dev.read = bme280_spi_read;
-        dev.write = bme280_spi_write;
-        dev.intf = BME280_SPI_INTF;
-        dev.intf_ptr = &SPI;
-        dev.delay_us = bme280_delay_us;
 
-        rslt = bme280_init(&dev);
-        bme280_error_codes_print_result("bme280_init", rslt);
-
-        /* Always read the current settings before writing, especially when all the configuration is not modified */
-        rslt = bme280_get_sensor_settings(&settings, &dev);
-        bme280_error_codes_print_result("bme280_get_sensor_settings", rslt);
-
-        /* Configuring the over-sampling rate, filter coefficient and standby time */
-        /* Overwrite the desired settings */
-        settings.filter = BME280_FILTER_COEFF_2;
-
-        /* Over-sampling rate for humidity, temperature and pressure */
-        settings.osr_h = BME280_OVERSAMPLING_1X;
-        settings.osr_p = BME280_OVERSAMPLING_1X;
-        settings.osr_t = BME280_OVERSAMPLING_1X;
-
-        /* Setting the standby time */
-        settings.standby_time = BME280_STANDBY_TIME_0_5_MS;
-
-        rslt = bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS, &settings, &dev);
-        bme280_error_codes_print_result("bme280_set_sensor_settings", rslt);
-
-        /* Always set the power mode after setting the configuration */
-        rslt = bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
-        bme280_error_codes_print_result("bme280_set_power_mode", rslt);
-
-        /* Calculate measurement time in microseconds */
-        rslt = bme280_cal_meas_delay(&period, &settings);
-        bme280_error_codes_print_result("bme280_cal_meas_delay", rslt);
-
-        printf("\nHumidity calculation (Data displayed are compensated values)\r\n");
-        printf("Measurement time : %lu us\r\n\n", (long unsigned int)period);
+    /* Over-sampling rate for humidity, temperature and pressure */
+    settings.osr_h = BME280_OVERSAMPLING_1X;
+    settings.osr_p = BME280_OVERSAMPLING_16X;
+    settings.osr_t = BME280_OVERSAMPLING_2X;
 
 
-        rslt = get_humidity(period, &dev);
-        bme280_error_codes_print_result("get_humidity", rslt);
 
-        while(1)
-        {
-    	osDelay(100);
-        }
+    rslt = bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS, &settings, &dev);
+    bme280_error_codes_print_result("bme280_set_sensor_settings", rslt);
+
+    /* Always set the power mode after setting the configuration */
+    rslt = bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
+    bme280_error_codes_print_result("bme280_set_power_mode", rslt);
+
+    /* Calculate measurement time in microseconds */
+    rslt = bme280_cal_meas_delay(&period, &settings);
+    bme280_error_codes_print_result("bme280_cal_meas_delay", rslt);
+
+    printf("\nHumidity calculation (Data displayed are compensated values)\r\n");
+    printf("Measurement time : %lu us\r\n\n", (long unsigned int)period);
+
+    if (   period / 1000  + 20 > 1000 / OUTPUT_RATE)
+    {
+    	printf("Output Rate too high for PTH settings!!");
+    	osThreadTerminate(NULL);
+    	return;
+    }
 
 
+    while (1)
+    {
+
+            rslt = get_pth_data(period, &dev, &comp);
+            if (rslt != BME280_OK)
+            {
+                bme280_error_codes_print_result("get_pth_data", rslt);
+                osDelay(1);
+            }
+            else
+            {
+                osMessageQueuePut(pth_data_queue_handle, &comp, 0, 0);
+                osSemaphoreAcquire(pth_timing_semaphore_handle, osWaitForever);
+            }
+    }
 }
-
-

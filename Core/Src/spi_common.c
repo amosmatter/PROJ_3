@@ -18,7 +18,12 @@ HAL_StatusTypeDef SPI_read_burst_implicit(SPI_HandleTypeDef *hspi, uint8_t reg_a
 	send_buf[0] = ((reg_addr & 0x7F) | 0x80);
 	uint8_t *rcv_buf = malloc(len + 1);
 
-	osMutexAcquire(SPI_Lock,osWaitForever);
+	  osStatus_t stat= osMutexAcquire(SPI_Lock,100);
+	if (stat != osOK)
+	{
+		printf("couldn't acquire mutex \n");
+		return HAL_ERROR;
+	}
 	HAL_GPIO_WritePin(CS_GPIOx, CS_GPIO_Pin, GPIO_PIN_RESET);
 	delay_us(2);
 	HAL_StatusTypeDef ret = HAL_SPI_TransmitReceive(hspi, send_buf, rcv_buf, len + 1, SPI_TIMEOUT);
