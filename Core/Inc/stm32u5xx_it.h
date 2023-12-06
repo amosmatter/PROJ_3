@@ -27,7 +27,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stm32u5xx_hal.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -54,8 +54,12 @@ void UsageFault_Handler(void);
 void DebugMon_Handler(void);
 void EXTI5_IRQHandler(void);
 void EXTI13_IRQHandler(void);
+void GPDMA1_Channel0_IRQHandler(void);
 void TIM1_UP_IRQHandler(void);
+void USART2_IRQHandler(void);
 /* USER CODE BEGIN EFP */
+
+void rcv_gps_uart_irq_handler(void);
 
 /* USER CODE END EFP */
 

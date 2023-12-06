@@ -18,7 +18,7 @@ HAL_StatusTypeDef SPI_read_burst_implicit(SPI_HandleTypeDef *hspi, uint8_t reg_a
 	send_buf[0] = ((reg_addr & 0x7F) | 0x80);
 	uint8_t *rcv_buf = malloc(len + 1);
 
-	  osStatus_t stat= osMutexAcquire(SPI_Lock,100);
+	  osStatus_t stat= osMutexAcquire(SPI_Lock,osWaitForever);
 	if (stat != osOK)
 	{
 		printf("couldn't acquire mutex \n");
@@ -44,14 +44,8 @@ HAL_StatusTypeDef SPI_write_burst_implicit(SPI_HandleTypeDef *hspi, uint8_t reg_
 
 	memcpy(&send_buf[1], data, len);
 	
-	osMutexAcquire(SPI_Lock,osWaitForever);
-	HAL_GPIO_WritePin(CS_GPIOx, CS_GPIO_Pin, GPIO_PIN_RESET);
-	delay_us(2);
-	HAL_StatusTypeDef ret = HAL_SPI_Transmit(hspi, send_buf, 2 * len, SPI_TIMEOUT);
-	delay_us(2);
-	HAL_GPIO_WritePin(CS_GPIOx, CS_GPIO_Pin, GPIO_PIN_SET);
-	osMutexRelease(SPI_Lock);
-
+	HAL_StatusTypeDef ret = SPI_write_bytes(hspi, send_buf, 2 * len, CS_GPIOx, CS_GPIO_Pin);
+	
 	free(send_buf);
 	return ret;
 }
@@ -73,15 +67,27 @@ HAL_StatusTypeDef SPI_write_burst_explicit(SPI_HandleTypeDef *hspi, uint8_t reg_
 		send_buf[2 * i + 1] = data[i];
 	}
 
+	HAL_StatusTypeDef ret = SPI_write_bytes(hspi, send_buf, 2 * len, CS_GPIOx, CS_GPIO_Pin);
+	free(send_buf);
+	return ret;
+}
+
+HAL_StatusTypeDef SPI_write_bytes(SPI_HandleTypeDef *hspi, void *data, size_t len, GPIO_TypeDef *CS_GPIOx, uint16_t CS_GPIO_Pin)
+{
+	if (len == 0)
+		return HAL_OK;
+
+	if (len > 127)
+		return HAL_ERROR;
+
+
 	osMutexAcquire(SPI_Lock,osWaitForever);
 	HAL_GPIO_WritePin(CS_GPIOx, CS_GPIO_Pin, GPIO_PIN_RESET);
 	delay_us(2);
-	HAL_StatusTypeDef ret = HAL_SPI_Transmit(hspi, send_buf, 2 * len, SPI_TIMEOUT);
+	HAL_StatusTypeDef ret = HAL_SPI_Transmit(hspi, data, len, SPI_TIMEOUT);
 	delay_us(2);
 	HAL_GPIO_WritePin(CS_GPIOx, CS_GPIO_Pin, GPIO_PIN_SET);
 	osMutexRelease(SPI_Lock);
-
-	free(send_buf);
 	return ret;
 }
 

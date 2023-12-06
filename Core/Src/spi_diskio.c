@@ -41,6 +41,8 @@ extern SPI_HandleTypeDef SPI;
 
 /* Function prototypes */
 
+//TODO make a more unified SPI clk rate selection
+
 //(Note that the _256 is used as a mask to clear the prescalar bits as it provides binary 111 in the correct position)
 #define FCLK_SLOW()                                                                           \
 	{                                                                                         \
@@ -48,7 +50,7 @@ extern SPI_HandleTypeDef SPI;
 	} /* Set SCLK = slow, 125 KBits/s*/
 #define FCLK_FAST()                                                                         \
 	{                                                                                       \
-		MODIFY_REG(SPI.Instance->CFG1, SPI_BAUDRATEPRESCALER_256, SPI_BAUDRATEPRESCALER_BYPASS); \
+		MODIFY_REG(SPI.Instance->CFG1, SPI_BAUDRATEPRESCALER_256, SPI_BAUDRATEPRESCALER_4); \
 	} /* Set SCLK = fast, 4 MBits/s */
 
 #define CS_HIGH()                                                      \

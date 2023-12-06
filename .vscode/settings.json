@@ -16,7 +16,9 @@
         "spi_common.h": "c",
         "math.h": "c",
         "stdatomic.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "type_traits": "c",
+        "common_task_defs.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
 }

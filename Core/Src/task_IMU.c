@@ -79,6 +79,18 @@ typedef struct
   int16_t Accuracy;
 } imu_raw_data_t;
 
+double validateAndSet(double num, double lowerBound, double upperBound, double defaultValue) { // from chatgpt
+    // Check if the number is a valid number (not NaN or infinity)
+    if (num != num || num * 0 != 0) {
+        return defaultValue;
+    }
+    
+    if (num < lowerBound || num > upperBound) {
+        return defaultValue;
+    }
+    return num;
+}
+
 void quat_to_ypr(imu_raw_data_t * quats, imu_data_t * data)
 {
 	double q1 = ((double)quats->Q1) / 1073741824.0; // Convert to double. Divide by 2^30
@@ -91,18 +103,18 @@ void quat_to_ypr(imu_raw_data_t * quats, imu_data_t * data)
 	// roll (x-axis rotation)
 	double t0 = +2.0 * (q0 * q1 + q2 * q3);
 	double t1 = +1.0 - 2.0 * (q1 * q1 + q2sqr);
-	data-> roll = atan2(t0, t1) * 180.0 / M_PI;
+	data-> roll = validateAndSet(atan2(t0, t1), -M_PI, M_PI, M_PI); 
 
 	// pitch (y-axis rotation)
 	double t2 = +2.0 * (q0 * q2 - q3 * q1);
 	t2 = t2 > 1.0 ? 1.0 : t2;
 	t2 = t2 < -1.0 ? -1.0 : t2;
-	data->  pitch = asin(t2) * 180.0 / M_PI;
+	data->  pitch = validateAndSet(asin(t2), -M_PI / 2.0, M_PI / 2.0, 0.0);
 
 	// yaw (z-axis rotation)
 	double t3 = +2.0 * (q0 * q3 + q1 * q2);
 	double t4 = +1.0 - 2.0 * (q2sqr + q3 * q3);
-	data-> yaw = atan2(t3, t4) * 180.0 / M_PI;
+	data-> yaw = validateAndSet(atan2(t3, t4), -M_PI, M_PI, 0.0);
 }
 
 void IMU_task(void *pvParameters)
