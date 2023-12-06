@@ -99,7 +99,7 @@ void processing_task(void *pvParameters)
 					.press = pth_data.pressure,
 					.longt = gps_data.longitude,
 					.lat = gps_data.latitude,
-					.energy = energy,
+					.energy = energy, // TODO d_energy instead of energy
 					.yaw = imu_data.yaw,
 					.pitch = imu_data.pitch,
 					.roll = imu_data.roll
