@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 typedef struct __packed
 {
     uint32_t time;     // time in seconds, shifted left by 8
@@ -33,6 +32,8 @@ typedef struct __packed
 
 void comm_rpi_task(void *pvParameters)
 {
+    osEventFlagsWait(init_events, ev_init_in, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
+    osEventFlagsSet(init_events, ev_init_rpi);
     rpi_tx_data_t rpi_in_data;
     while (1)
     {

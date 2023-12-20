@@ -71,7 +71,6 @@ char *write_line(char *buffer, size_t *maxlen, csv_dump_data_t *data)
 
 void SD_task(void *pvParameters)
 {
-    osDelay(2000);
     csv_dump_data_t data_in;
 
     FATFS fs;
@@ -80,6 +79,8 @@ void SD_task(void *pvParameters)
     DIR dir;
     FILINFO fileInfo;
     FIL file;
+
+    osEventFlagsWait(init_events, ev_init_in, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 
     res = f_mount(fs_ptr, "", 1); // Mounts the default drive
     while (res != FR_OK)
@@ -122,7 +123,6 @@ void SD_task(void *pvParameters)
         printf("Failed to open directory. Error code: %d\n", res);
         osDelay(-1);
     }
-
     // Open or create a file named "data.csv"
     res = f_open(&file, "data.csv", FA_CREATE_ALWAYS | FA_WRITE);
     if (res != FR_OK)
@@ -141,6 +141,8 @@ void SD_task(void *pvParameters)
         f_close(&file);
         osDelay(-1);
     }
+
+    osEventFlagsSet(init_events, ev_init_csv);
 
     while (1)
     {

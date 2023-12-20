@@ -78,27 +78,34 @@ void airspeed_task(void *pvParameters)
 {
     raw_airspeed_data_t raw_data;
     airspeed_data_t data;
+    osEventFlagsSet(init_events, ev_init_airsp);
     while (1)
     {
-        HAL_StatusTypeDef ret =  get_data(&raw_data);
-        if (ret != HAL_OK)
+        osEventFlagsWait(timing_events, ev_rcv_airsp, osFlagsWaitAll, osWaitForever);
+
+        while (1)
         {
-            DEBUG_PRINT("Comm error! \n");
-            continue;
-        }
-        else if (raw_data.flags & 3 == 2)
-        {
-            DEBUG_PRINT("Stale Data! \n");
-            continue;
-        }
-        else if (raw_data.flags & 3 == 3)
-        {
-            DEBUG_PRINT("Fault detected!\n");
-            continue;
+            get_data(&raw_data);                         // request measurement
+            HAL_StatusTypeDef ret = get_data(&raw_data); // get measurement
+            if (ret != HAL_OK)
+            {
+                DEBUG_PRINT("Comm error! \n");
+                continue;
+            }
+            else if (raw_data.flags & 3 == 2)
+            {
+                DEBUG_PRINT("Stale Data! \n");
+                continue;
+            }
+            else if (raw_data.flags & 3 == 3)
+            {
+                DEBUG_PRINT("Fault detected!\n");
+                continue;
+            }
+            break;
         }
         data.d_pressure = get_pressure_pascals(&raw_data);
         data.temp = get_temperature_c(&raw_data);
         osMessageQueuePut(airsp_data_queue_handle, &data, 0, 0);
-        osSemaphoreAcquire(airsp_timing_semaphore_handle, osWaitForever);
     }
 }

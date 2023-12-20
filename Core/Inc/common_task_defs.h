@@ -29,10 +29,32 @@ extern osMessageQueueId_t csv_queue_handle;
 
 extern osMutexId_t SPI_Lock;
 
-extern osSemaphoreId_t imu_timing_semaphore_handle;
-extern osSemaphoreId_t gps_timing_semaphore_handle;
-extern osSemaphoreId_t pth_timing_semaphore_handle;
-extern osSemaphoreId_t airsp_timing_semaphore_handle;
+enum e_init_events
+{
+  ev_init_gps = BIT(0),
+  ev_init_imu = BIT(1),
+  ev_init_pth = BIT(2),
+  ev_init_airsp = BIT(3),
+  ev_init_rpi = BIT(4),
+  ev_init_csv = BIT(5),
+  ev_init_in = ev_init_gps | ev_init_imu | ev_init_pth | ev_init_airsp,
+  ev_init_out = ev_init_csv | ev_init_rpi,
+  ev_init_all = ev_init_in | ev_init_out
+};
+
+extern osEventFlagsId_t init_events;
+
+enum e_timing_events
+{
+  ev_rcv_imu = BIT(0),
+  ev_rcv_pth = BIT(1),
+  ev_rcv_gps = BIT(2),
+  ev_rcv_airsp = BIT(3),
+  ev_rcv_all = ev_rcv_imu | ev_rcv_pth | ev_rcv_gps | ev_rcv_airsp
+
+};
+
+extern osEventFlagsId_t timing_events;
 
 typedef struct
 {
@@ -43,7 +65,6 @@ typedef struct
 #define IMU_DATA_SIZE (sizeof(imu_data_t))
 #define IMU_DATA_QUEUE_SIZE (1)
 
-
 typedef struct
 {
   uint32_t time;
@@ -53,7 +74,6 @@ typedef struct
   double longitude;
   double ground_speed;
 } gps_data_t;
-
 
 #define GPS_DATA_SIZE (sizeof(gps_data_t))
 #define GPS_DATA_QUEUE_SIZE (1)
@@ -74,47 +94,44 @@ typedef struct
 #define AIRSPEED_DATA_SIZE (sizeof(airspeed_data_t))
 #define AIRSPEED_DATA_QUEUE_SIZE (1)
 
-
-typedef struct 
+typedef struct
 {
-  uint32_t time_ms;     
+  uint32_t time_ms;
   double hum;      // humidity in 0.002 %
   double v_ground; // ground speed in 0.005 m/s
-  double v_air;     // air speed in 0.01 m/s
-  double temp;    // temperature in 0.005 C
-  double press;   // pressure  in 5 Pa
+  double v_air;    // air speed in 0.01 m/s
+  double temp;     // temperature in 0.005 C
+  double press;    // pressure  in 5 Pa
   double longt;
   double lat;
   double alt_rel_start; // altitude relative to start of flight in 0.125 m
   double roll;          // roll in 0.0002 rad
   double pitch;         // pitch in 0.0002 rad
   double yaw;           // yaw in 0.0002 rad
-  double energy;      // energy in 0.25 m
+  double energy;        // energy in 0.25 m
 } rpi_tx_data_t;
 
 #define RPI_TX_DATA_SIZE (sizeof(rpi_tx_data_t))
 #define RPI_TX_DATA_QUEUE_SIZE (1)
 
-typedef struct 
+typedef struct
 {
-  uint32_t time_ms;     
+  uint32_t time_ms;
   double hum;      // humidity in 0.002 %
   double v_ground; // ground speed in 0.005 m/s
-  double v_air;     // air speed in 0.01 m/s
-  double temp;    // temperature in 0.005 C
-  double press;   // pressure  in 5 Pa
+  double v_air;    // air speed in 0.01 m/s
+  double temp;     // temperature in 0.005 C
+  double press;    // pressure  in 5 Pa
   double longt;
   double lat;
   double alt_rel_start; // altitude relative to start of flight in 0.125 m
   double roll;          // roll in 0.0002 rad
   double pitch;         // pitch in 0.0002 rad
   double yaw;           // yaw in 0.0002 rad
-  double energy;      // energy in 0.25 m
+  double energy;        // energy in 0.25 m
 } csv_dump_data_t;
 
 #define CSV_DUMP_DATA_SIZE (sizeof(csv_dump_data_t))
 #define CSV_DUMP_DATA_QUEUE_SIZE (10)
-
-
 
 #endif /* INC_COMMON_TASK_DEFS_H_ */

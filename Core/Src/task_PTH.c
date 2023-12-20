@@ -93,7 +93,7 @@ static int8_t get_pth_data(uint32_t period, struct bme280_dev *dev, struct bme28
 
         if (status_reg & BME280_STATUS_MEAS_DONE)
         {
-            //delay_ms(period / 1000 + 5);
+            // delay_ms(period / 1000 + 5);
             /* Read compensated data */
             rslt = bme280_get_sensor_data(BME280_HUM | BME280_PRESS | BME280_TEMP, comp_data, dev);
 
@@ -131,14 +131,10 @@ void PTH_task(void *pvParameters)
     settings.filter = BME280_FILTER_COEFF_16;
     settings.standby_time = BME280_STANDBY_TIME_0_5_MS;
 
-
-
     /* Over-sampling rate for humidity, temperature and pressure */
     settings.osr_h = BME280_OVERSAMPLING_1X;
     settings.osr_p = BME280_OVERSAMPLING_16X;
     settings.osr_t = BME280_OVERSAMPLING_2X;
-
-
 
     rslt = bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS, &settings, &dev);
     bme280_error_codes_print_result("bme280_set_sensor_settings", rslt);
@@ -154,27 +150,27 @@ void PTH_task(void *pvParameters)
     printf("\nHumidity calculation (Data displayed are compensated values)\r\n");
     printf("Measurement time : %lu us\r\n\n", (long unsigned int)period);
 
-    if (   period / 1000  + 20 > 1000 / OUTPUT_RATE)
+    if (period / 1000 + 20 > 1000 / OUTPUT_RATE)
     {
-    	printf("Output Rate too high for PTH settings!!");
-    	osThreadTerminate(NULL);
-    	return;
+        printf("Output Rate too high for PTH settings!!");
+        osThreadTerminate(NULL);
+        return;
     }
 
+    osEventFlagsSet(init_events, ev_init_pth);
 
     while (1)
     {
-
-            rslt = get_pth_data(period, &dev, &comp);
-            if (rslt != BME280_OK)
-            {
-                bme280_error_codes_print_result("get_pth_data", rslt);
-                osDelay(1);
-            }
-            else
-            {
-                osMessageQueuePut(pth_data_queue_handle, &comp, 0, 0);
-                osSemaphoreAcquire(pth_timing_semaphore_handle, osWaitForever);
-            }
+        osEventFlagsWait(timing_events, ev_rcv_pth, osFlagsWaitAll, osWaitForever);
+        rslt = get_pth_data(period, &dev, &comp);
+        if (rslt != BME280_OK)
+        {
+            bme280_error_codes_print_result("get_pth_data", rslt);
+            osDelay(1);
+        }
+        else
+        {
+            osMessageQueuePut(pth_data_queue_handle, &comp, 0, 0);
+        }
     }
 }

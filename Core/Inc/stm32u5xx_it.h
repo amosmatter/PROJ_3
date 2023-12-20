@@ -60,6 +60,8 @@ void USART2_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 void rcv_gps_uart_irq_handler(void);
+void imu_data_available_irq_handler(void);
+
 
 /* USER CODE END EFP */
 

@@ -105,19 +105,16 @@ osMessageQueueId_t rpi_tx_queue_handle;
 
 osMutexId_t SPI_Lock;
 
-osSemaphoreId_t imu_timing_semaphore_handle;
-osSemaphoreId_t gps_timing_semaphore_handle;
-osSemaphoreId_t pth_timing_semaphore_handle;
-osSemaphoreId_t airsp_timing_semaphore_handle;
+osEventFlagsId_t init_events;
+osEventFlagsId_t timing_events;
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
+    .name = "defaultTask",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 128 * 4};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -129,11 +126,12 @@ void StartDefaultTask(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
-void MX_FREERTOS_Init(void) {
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
+void MX_FREERTOS_Init(void)
+{
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -145,13 +143,11 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
-  
-  imu_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
-  gps_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
-  pth_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
-  airsp_timing_semaphore_handle = osSemaphoreNew(1, 0, NULL);
 
 
+
+  init_events = osEventFlagsNew(NULL);
+  timing_events = osEventFlagsNew(NULL);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -175,7 +171,7 @@ void MX_FREERTOS_Init(void) {
   proc_TaskHandle = osThreadNew(processing_task, NULL, &PTH_TaskAttributes);
 
   IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
-  // AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
+  AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
   GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
   rpi_comm_TaskHandle = osThreadNew(comm_rpi_task, NULL, &SD_TaskAttributes);
   SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
@@ -185,7 +181,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
@@ -209,4 +204,3 @@ void StartDefaultTask(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-

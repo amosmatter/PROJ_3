@@ -9,9 +9,9 @@
 #include "common_task_defs.h"
 #include "FreeRTOS.h"
 
-enum events
+enum en_gps_events
 {
-    ev_line_rcv = BIT(0)
+    ev_data_available = BIT(0)
 };
 
 osEventFlagsId_t GPS_events;
@@ -133,7 +133,7 @@ HAL_StatusTypeDef get_nmea_intervall(void)
 
 void rcv_gps_uart_irq_handler(void)
 {
-    osEventFlagsSet(GPS_events, ev_line_rcv);
+    osEventFlagsSet(GPS_events, ev_data_available);
 }
 
 #define RCVD_GGA_FLAG BIT(0)
@@ -150,13 +150,17 @@ void GPS_task(void *pvParameters)
     HAL_StatusTypeDef ret = HAL_OK;
 
     uint8_t ctr = 0;
+
+	osEventFlagsSet(init_events, ev_init_gps);
+
+
     while (1)
     {
 
         HAL_UARTEx_ReceiveToIdle_DMA(&GPS_UART, line, sizeof(line));
-        osEventFlagsWait(GPS_events, ev_line_rcv, NULL, osWaitForever);
+        osEventFlagsWait(GPS_events, ev_data_available, NULL, osWaitForever);
         gps_data.ticks = osKernelGetTickCount();
-        osEventFlagsClear(GPS_events, ev_line_rcv);
+        osEventFlagsClear(GPS_events, ev_data_available);
         
         char *ptr = line;
         uint32_t flag = 0;

@@ -39,6 +39,28 @@ static ICM_20948_Status_e ICM_20948_int_enable_raw_data_ready(ICM_20948_Device_t
   return status;
 }
 
+ICM_20948_Status_e ICM_20948_int_enable_DMP(ICM_20948_Device_t *pdev, bool enable)
+{
+  ICM_20948_INT_enable_t en;                                         // storage
+  ICM_20948_Status_e status = ICM_20948_int_enable(pdev, NULL, &en); // read phase
+  if (status != ICM_20948_Stat_Ok)
+  {
+    return status;
+  }
+  en.DMP_INT1_EN = enable;                       // change the setting
+  status = ICM_20948_int_enable(pdev, &en, &en); // write phase w/ readback
+  if (status != ICM_20948_Stat_Ok)
+  {
+    return status;
+  }
+  if (en.DMP_INT1_EN != enable)
+  {
+    status = ICM_20948_Stat_Err;
+    return status;
+  }
+  return status;
+}
+
 void debugPrintStatus(ICM_20948_Status_e stat)
 {
   switch (stat)
@@ -189,7 +211,6 @@ ICM_20948_Status_e ICM_20948_startup_magnetometer(ICM_20948_Device_t *pdev)
     }
   }
   return status;
-
 }
 
 ICM_20948_Status_e ICM_20948_startup_default(ICM_20948_Device_t *pdev, const ICM_20948_Serif_t *pserif, uint32_t minimal)
@@ -284,7 +305,7 @@ ICM_20948_Status_e ICM_20948_startup_default(ICM_20948_Device_t *pdev, const ICM
   } // sensors: 	ICM_20948_Internal_Acc, ICM_20948_Internal_Gyr, ICM_20948_Internal_Mst
 
   ICM_20948_fss_t FSS;
-  FSS.a = gpm4;   // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
+  FSS.a = gpm4;    // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
   FSS.g = dps2000; // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
   retval = ICM_20948_set_full_scale(pdev, (ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), FSS);
   if (retval != ICM_20948_Stat_Ok)
@@ -365,7 +386,7 @@ ICM_20948_Status_e ICM_20948_initialize_DMP(ICM_20948_Device_t *pdev)
   // true: set the I2C_SLV0_CTRL I2C_SLV0_GRP bit to show the register pairing starts at byte 1+2 (copied from inv_icm20948_resume_akm)
   // true: set the I2C_SLV0_CTRL I2C_SLV0_BYTE_SW to byte-swap the data from the mag (copied from inv_icm20948_resume_akm)
 
- // ADDITION
+  // ADDITION
   result = ICM_20948_i2c_controller_configure_peripheral(pdev, 0, MAG_AK09916_I2C_ADDR, AK09916_REG_ST1, 9, true, true, false, false, false, 0);
   if (result > worstResult)
     worstResult = result;
@@ -388,11 +409,6 @@ ICM_20948_Status_e ICM_20948_initialize_DMP(ICM_20948_Device_t *pdev)
   result = ICM_20948_i2c_controller_configure_peripheral(pdev, 1, MAG_AK09916_I2C_ADDR, AK09916_REG_CNTL2, 1, false, true, false, false, false, AK09916_mode_single);
   if (result > worstResult)
     worstResult = result;
-
-
-
-
-
 
   // Set the I2C Master ODR configuration
   // It is not clear why we need to do this... But it appears to be essential! From the datasheet:
@@ -502,8 +518,8 @@ ICM_20948_Status_e ICM_20948_initialize_DMP(ICM_20948_Device_t *pdev)
   mySmplrt.a = 19; // ODR is computed as follows: 1.125 kHz/(1+ACCEL_SMPLRT_DIV[11:0]). 19 = 56.25Hz. InvenSense Nucleo example uses 19 (0x13).
   // mySmplrt.g = 4; // 225Hz
   // mySmplrt.a = 4; // 225Hz
-  // mySmplrt.g = 8; // 112Hz
-  // mySmplrt.a = 8; // 112Hz
+  //  mySmplrt.g = 8; // 112Hz
+  //  mySmplrt.a = 8; // 112Hz
   result = ICM_20948_set_sample_rate(pdev, (ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), mySmplrt);
   if (result > worstResult)
     worstResult = result;
@@ -680,10 +696,35 @@ ICM_20948_Status_e ICM_20948_initialize_DMP(ICM_20948_Device_t *pdev)
   result = inv_icm20948_write_mems(pdev, CPASS_TIME_BUFFER, 2, &compassRate[0]);
   if (result > worstResult)
     worstResult = result;
+  return worstResult;
 
-  // Enable DMP interrupt
-  // This would be the most efficient way of getting the DMP data, instead of polling the FIFO
-  // result = intEnableDMP(true); if (result > worstResult) worstResult = result;//TODO: activate
+    // Enable DMP interrupt
+  ICM_20948_INT_PIN_CFG_t reg;
+  result = ICM_20948_int_pin_cfg(pdev, NULL, &reg); // read phase
+  if (result > worstResult)
+  {
+    worstResult = result;
+  }
+  reg.INT1_LATCH_EN = 0;                            // set the setting
+  reg.INT1_ACTL = 1;                                // set the setting
+  reg.INT1_OPEN = 1;                                // set the setting
+  result = ICM_20948_int_pin_cfg(pdev, &reg, NULL); // write phase
+  if (result > worstResult)
+  {
+    worstResult = result;
+  }
 
+  ICM_20948_INT_enable_t en = {0};
+  en.DMP_INT1_EN = 1;                            // change the setting
+  en.FIFO_OVERFLOW_EN_0 = 1;                     // change the setting
+  en.FIFO_OVERFLOW_EN_1 = 1;                     // change the setting
+  en.FIFO_OVERFLOW_EN_2 = 1;                     // change the setting
+  en.FIFO_OVERFLOW_EN_3 = 1;                     // change the setting
+  en.FIFO_OVERFLOW_EN_4 = 1;                     // change the setting
+  result = ICM_20948_int_enable(pdev, &en, &en); // write phase w/ readback
+  if (result > worstResult)
+  {
+    worstResult = result;
+  }
   return worstResult;
 }

@@ -219,7 +219,7 @@ void DebugMon_Handler(void)
 void EXTI5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI5_IRQn 0 */
-
+  imu_data_available_irq_handler();
   /* USER CODE END EXTI5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(IMU_INT_Pin);
   /* USER CODE BEGIN EXTI5_IRQn 1 */
