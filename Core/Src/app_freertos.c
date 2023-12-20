@@ -31,7 +31,7 @@
 #include "task_IMU.h"
 #include "task_GPS.h"
 #include "task_SD.h"
-#include "task_AIRSPEED.h"
+#include "task_airspeed.h"
 #include "task_processing.h"
 #include "task_comm_rpi.h"
 /* USER CODE END Includes */

@@ -19,7 +19,8 @@
         "freertos.h": "c",
         "type_traits": "c",
         "common_task_defs.h": "c",
-        "stm32u5xx_it.h": "c"
+        "stm32u5xx_it.h": "c",
+        "task_airspeed.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
 }
