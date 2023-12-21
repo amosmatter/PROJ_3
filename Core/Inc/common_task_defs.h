@@ -10,7 +10,7 @@
 #include "cmsis_os2.h"
 #include "task_PTH.h"
 #include <stdint.h>
-
+#include "minmea-master/minmea.h"
 extern osThreadId_t PTH_TaskHandle;
 extern osThreadId_t IMU_TaskHandle;
 extern osThreadId_t GPS_TaskHandle;
@@ -67,7 +67,8 @@ typedef struct
 
 typedef struct
 {
-  uint32_t time;
+  struct minmea_date date;
+  struct minmea_time time;
   uint32_t ticks;
   double altitude;
   double latitude;

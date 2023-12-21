@@ -17,6 +17,8 @@ enum en_gps_events
 
 #define MAX_GPS_CMD_LEN 128
 #define CMD_RETRIES 10
+
+#define KNOTS_TO_MS 0.51444444444
 osEventFlagsId_t GPS_events;
 
 extern UART_HandleTypeDef GPS_UART;
@@ -230,30 +232,32 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
         bool ret = minmea_parse_gga(&sentence, rcv);
         if (ret)
         {
-
-            dat->time = sentence.time.hours * 3600 * 1000 + sentence.time.minutes * 60 * 1000 + sentence.time.seconds * 1000 + sentence.time.microseconds / 1000;
             dat->altitude = sentence.altitude.value / (double)sentence.altitude.scale;
-            dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
-            dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
         }
         break;
     }
-    case MINMEA_SENTENCE_VTG:
+    case MINMEA_SENTENCE_RMC:
     {
-        struct minmea_sentence_vtg sentence;
-        bool ret = minmea_parse_vtg(&sentence, rcv);
+        struct minmea_sentence_rmc sentence;
+        bool ret = minmea_parse_rmc(&sentence, rcv);
         if (ret)
         {
-            dat->ground_speed = (1 / 3.6) * sentence.speed_kph.value / (double)sentence.speed_kph.scale;
+            dat->time = sentence.time;
+            dat->date = sentence.date;
+            dat->ticks = osKernelGetTickCount();
+            dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
+            dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
+            dat->ground_speed = KNOTS_TO_MS * sentence.speed.value / (double)sentence.speed.scale;
         }
         break;
     }
     }
-    printf("parsed NMEA: %s\n", rcv);
 }
 
 int gps_find_and_parse_NMEA(char *rcv, gps_data_t *dat)
 {
+    memset(dat, -1, sizeof(*dat));
+    DEBUG_PRINT("Parsing NMEA: \n%s\n", rcv);
     size_t j = 0;
     size_t end = strlen(rcv);
     int status = -1;
@@ -340,7 +344,7 @@ int confirm_comm()
 
 int set_uart_baud(uint32_t baudrate)
 {
-    GPS_UART.Init.BaudRate = 115200;
+    GPS_UART.Init.BaudRate = baudrate;
     HAL_StatusTypeDef ret = HAL_UART_Init(&GPS_UART);
     if (ret != HAL_OK)
     {
@@ -349,8 +353,6 @@ int set_uart_baud(uint32_t baudrate)
     }
     return 0;
 }
-
-
 
 int gps_set_base_interval(uint32_t interval)
 {
@@ -364,56 +366,16 @@ int gps_set_message_interval_scaler(uint32_t gll_int, uint32_t rmc_int, uint32_t
 
 int gps_set_baudrate(uint32_t baudrate)
 {
-
-    uint32_t baud_bef = GPS_UART.Init.BaudRate;
+    uint32_t baud_b4 = GPS_UART.Init.BaudRate;
 
     char line[MAX_GPS_CMD_LEN];
     gps_build_cmd(line, sizeof(line), 251, "%u", baudrate);
     gps_send(line, 100);
 
-    set_uart_baud(115200);
+    set_uart_baud(baudrate);
 
     return confirm_comm();
 }
-
-HAL_StatusTypeDef get_nmea_intervall(void)
-{
-    char line[128] = {};
-
-    HAL_StatusTypeDef ret = HAL_UART_Transmit(&GPS_UART, "$PGKC201*2C\r\n", 17, 1000);
-
-    if (ret != HAL_OK)
-    {
-        printf("req failed\n");
-        return HAL_ERROR;
-    }
-
-    ret = gps_rcv_line(line, sizeof(line), 10);
-
-    if (ret != HAL_OK)
-    {
-        printf("rec failed\n");
-        return HAL_ERROR;
-    }
-
-    if (!minmea_check(line, true))
-
-    {
-        printf("check failed\n");
-        return HAL_ERROR;
-    }
-
-    if (!strncmp(line, "$PGKC202", 8) == 0)
-    {
-        printf("Wrong response\n");
-        return HAL_ERROR;
-    }
-    printf("%s\n", line);
-    return HAL_OK;
-}
-
-#define RCVD_GGA_FLAG BIT(0)
-#define RCVD_VTG_FLAG BIT(1)
 
 void GPS_task(void *pvParameters)
 {
@@ -428,18 +390,25 @@ void GPS_task(void *pvParameters)
     HAL_StatusTypeDef ret = HAL_OK;
 
     DEBUG_PRINT("---------------------------------------------------------------\nGPS task started\n");
-
+    set_uart_baud(9600);
     if (confirm_comm() < 0)
     {
-        DEBUG_PRINT("failed to establish connection on 9600, trying 115200\n");
+        DEBUG_PRINT("failed to establish connection on 9600, trying 57100\n");
         set_uart_baud(115200);
         if (confirm_comm() < 0)
         {
-            DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
-            return;
+            DEBUG_PRINT("failed to establish connection on 57100, trying 115200\n");
+            set_uart_baud(115200);
+            if (confirm_comm() < 0)
+            {
+                DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
+                return;
+            }
         }
     }
-    gps_set_mode(4, 900);
+
+    // gps_set_mode(4, 900);
+
     if (gps_set_baudrate(115200) < 0)
     {
         DEBUG_PRINT("failed baud change\n");
@@ -449,35 +418,32 @@ void GPS_task(void *pvParameters)
     {
         DEBUG_PRINT("failed interval change\n");
     }
-    if (gps_set_message_interval_scaler(0, 0, 1, 1,0, 0) < 0)
+    if (gps_set_message_interval_scaler(1, 1, 1, 1, 1, 1) < 0)
     {
         DEBUG_PRINT("failed individual message interval change\n");
     }
 
-    if (gps_send_cmd(250, 100, "%u", 115200) < 0) // set dgps baud
-    {
-        DEBUG_PRINT("failed interval change\n");
-    }
-     if (gps_send_cmd(301, 100, "%u", 1) < 0) // set dgps to rtcm
-    {
-         DEBUG_PRINT("failed interval change\n");
-     }
-
-    if (gps_send_cmd(313, 100, "%u", 1) < 0) // enable SBAS
-    {
-        DEBUG_PRINT("failed interval change\n");
-    }
-
-
-
-
-        gps_set_mode(0, 1000); // GPS doesn't seem to confirm the first attempt so has to fail
+    //   if (gps_send_cmd(250, 100, "%u", 115200) < 0) // set dgps baud
+    //   {
+    //       DEBUG_PRINT("failed interval change\n");
+    //   }
+    //    if (gps_send_cmd(301, 100, "%u", 1) < 0) // set dgps to rtcm
+    //   {
+    //        DEBUG_PRINT("failed interval change\n");
+    //    }
+    //
+    //   if (gps_send_cmd(313, 100, "%u", 1) < 0) // enable SBAS
+    //   {
+    //       DEBUG_PRINT("failed interval change\n");
+    //   }
+    // gps_set_mode(0, 1000); // GPS doesn't seem to confirm the first attempt so has to fail
 
     while (1)
     {
         gps_recieve(inbuf, sizeof(inbuf), 1100);
+        printf("------------------------\n%s\n----------------", inbuf);
         gps_find_and_parse_NMEA(inbuf, &gps_data);
         printf("\n - \n");
-        osDelay(100);
+        osDelay(20);
     }
 }

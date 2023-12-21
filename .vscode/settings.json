@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.h": "c",
         "adc.h": "c",
         "main.h": "c",
         "stm32u5xx_hal.h": "c",
@@ -20,7 +21,8 @@
         "type_traits": "c",
         "common_task_defs.h": "c",
         "stm32u5xx_it.h": "c",
-        "task_airspeed.h": "c"
+        "task_airspeed.h": "c",
+        "ctime": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
 }

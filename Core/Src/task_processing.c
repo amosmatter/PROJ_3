@@ -78,7 +78,8 @@ void processing_task(void *pvParameters)
 			printf("Measurements took too long \n");
 		}
 
-		time_ms = gps_data.time + (osKernelGetTickCount() - gps_data.ticks);
+		uint32_t t_gps = gps_data.time.hours * 3600 * 1000 + gps_data.time.minutes * 60 * 1000 + gps_data.time.seconds * 1000 + gps_data.time.microseconds / 1000;
+		time_ms = t_gps+ (osKernelGetTickCount() - gps_data.ticks);
 		if (last_time_ms == 0)
 		{
 			last_time_ms = time_ms;
