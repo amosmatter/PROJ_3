@@ -8,32 +8,18 @@
 #include <stdlib.h>
 #include "common_task_defs.h"
 #include "FreeRTOS.h"
+#include <stdarg.h>
 
 enum en_gps_events
 {
     ev_data_available = BIT(0)
 };
 
+#define MAX_GPS_CMD_LEN 128
+#define CMD_RETRIES 10
 osEventFlagsId_t GPS_events;
 
 extern UART_HandleTypeDef GPS_UART;
-
-static HAL_StatusTypeDef gps_rcv_line(char *buffer, uint16_t length, uint32_t timeout)
-{
-    size_t i = 0;
-    HAL_StatusTypeDef ret;
-
-    for (i = 0; i < length; i++)
-    {
-        ret = HAL_UART_Receive(&GPS_UART, (uint8_t *)&buffer[i], 1, timeout);
-        if (buffer[i] == '\n' || ret != HAL_OK)
-        {
-            break;
-        }
-    }
-    buffer[i + 1] = '\0';
-    return ret;
-}
 
 size_t get_len_of_cmd(const char *str)
 {
@@ -55,44 +41,339 @@ size_t get_len_of_cmd(const char *str)
 
     return 0; // Invalid command
 }
-static HAL_StatusTypeDef gps_send_line(const char *buffer, uint32_t timeout)
+
+size_t get_line_len(char *str)
+{
+    size_t i = 0;
+    while (str[i] != '\0' && str[i] != '\n')
+    {
+        i++;
+        if (i > MAX_GPS_CMD_LEN)
+        {
+            return 0;
+        }
+    }
+    return i;
+}
+
+void rcv_gps_uart_irq_handler(void)
+{
+    osEventFlagsSet(GPS_events, ev_data_available);
+}
+
+HAL_StatusTypeDef gps_transmit_recieve(const char *cmd, char *buffer, uint16_t length, uint32_t timeout)
 {
     HAL_StatusTypeDef ret = HAL_OK;
-
-    size_t cmdlen = get_len_of_cmd(buffer);
-    const line_len = cmdlen + 6; // Buffer + '*'+ Checksum (2 Hex Chars) + CR + LF + null
-    char *outbuf = (char *)malloc(line_len);
-    if (outbuf == NULL)
+    if (buffer != NULL)
     {
-        return HAL_ERROR;
+        osEventFlagsClear(GPS_events, ev_data_available);
+        ret |= HAL_UARTEx_ReceiveToIdle_DMA(&GPS_UART, (uint8_t *)buffer, length);
     }
-
-    memcpy(outbuf, buffer, cmdlen);
-    outbuf[cmdlen] = '\0';
-
-    uint8_t chck = minmea_checksum(outbuf);
-    sprintf(outbuf + cmdlen, "*%02X\n\r", chck);
-    if (minmea_check(outbuf, true))
+    if (cmd != NULL && ret == HAL_OK)
     {
-        ret = HAL_UART_Transmit(&GPS_UART, outbuf, strlen(outbuf), timeout);
+        ret |= HAL_UART_Transmit(&GPS_UART, cmd, strlen(cmd), timeout);
     }
-    else
+    if (buffer != NULL)
     {
-        ret = HAL_ERROR;
+        uint32_t eventret = osEventFlagsWait(GPS_events, ev_data_available, NULL, timeout);
+        if (*(int32_t *)&eventret < 0)
+        {
+            buffer[0] = '\0';
+            ret = HAL_TIMEOUT;
+        }
+        else
+        {
+            buffer[length - GPS_UART.RxXferCount] = '\0';
+        }
     }
-
-    free(outbuf);
-
+    HAL_UART_AbortReceive(&GPS_UART);
     return ret;
 }
 
-HAL_StatusTypeDef set_normal_mode(void)
+HAL_StatusTypeDef gps_recieve(char *buffer, uint16_t length, uint32_t timeout)
 {
-    return HAL_UART_Transmit(&GPS_UART, "$PGKC105,0*37\r\n", 15, 1000);
+    return gps_transmit_recieve(NULL, buffer, length, timeout);
 }
-HAL_StatusTypeDef get_software_version(void)
+
+HAL_StatusTypeDef gps_send(const char *cmd, uint32_t timeout)
 {
-    return HAL_UART_Transmit(&GPS_UART, "$PGKC462*2F\r\n", 13, HAL_MAX_DELAY);
+    return gps_transmit_recieve(cmd, NULL, 0, timeout);
+}
+
+int vgps_build_cmd(char *buffer, size_t maxlen, uint32_t cmd, const char *fmt, va_list args)
+{
+    if (!buffer || !maxlen)
+    {
+        return -1;
+    }
+
+    size_t allwritten = 0;
+
+    int n_written = snprintf(buffer, maxlen, "$PMTK%03lu", cmd);
+    if (n_written < 1 || n_written >= maxlen)
+    {
+        buffer[0] = '\0';
+        return -1;
+    }
+
+    allwritten += n_written;
+    buffer += n_written;
+    maxlen -= n_written;
+
+    if (fmt != NULL)
+    {
+
+        if (maxlen < 1)
+        {
+            buffer[0] = '\0';
+            return -1;
+        }
+        buffer[0] = ',';
+        allwritten++;
+        buffer++;
+        maxlen--;
+
+        n_written = vsnprintf(buffer, maxlen, fmt, args);
+
+        if (n_written < 1 || n_written >= maxlen)
+        {
+            buffer[0] = '\0';
+            return -1;
+        }
+
+        allwritten += n_written;
+        buffer += n_written;
+        maxlen -= n_written;
+    }
+
+    uint8_t chck = minmea_checksum(buffer - allwritten);
+    n_written = snprintf(buffer, maxlen, "*%02X\r\n", chck);
+
+    if (n_written < 1 || n_written >= maxlen)
+    {
+        buffer[0] = '\0';
+        return -1;
+    }
+    allwritten += n_written;
+
+    return allwritten;
+}
+int gps_build_cmd(char *buffer, size_t maxlen, uint32_t cmd, const char *fmt, ...)
+{
+    int ret;
+    va_list args;
+    va_start(args, fmt);
+    ret = vgps_build_cmd(buffer, maxlen, cmd, fmt, args);
+    va_end(args);
+    return ret;
+}
+
+int gps_parse_ack(int incmd, char *rcv)
+{
+
+    char type[10] = {};
+    int rcvcmd;
+    int status;
+
+    if (strncmp(rcv, "$PMTK001", 8) != 0)
+    {
+        return -1;
+    }
+
+    if (!minmea_scan(rcv, "tii", type, &rcvcmd, &status))
+    {
+        return -1;
+    }
+    if (rcvcmd != incmd)
+    {
+        return -1;
+    }
+
+    return status;
+}
+
+int gps_find_and_parse_ack(int incmd, char *rcv)
+{
+
+    size_t j = 0;
+    size_t end = strlen(rcv);
+    int status = -1;
+
+    while (status < 0 && j <= end && rcv[j] != '\0')
+    {
+        if (rcv[j] == '$')
+        {
+            uint32_t linelen = get_line_len(&rcv[j]);
+            rcv[j + linelen] = '\0';
+            status = gps_parse_ack(incmd, &rcv[j]);
+            if (status != -1)
+            {
+                break;
+            }
+            j += linelen + 1;
+        }
+        else
+        {
+            j++;
+        }
+    }
+    return status;
+}
+
+int parse_NMEA(char *rcv, gps_data_t *dat)
+{
+    switch (minmea_sentence_id(rcv, 1))
+    {
+    case MINMEA_SENTENCE_GGA:
+    {
+        struct minmea_sentence_gga sentence;
+        bool ret = minmea_parse_gga(&sentence, rcv);
+        if (ret)
+        {
+
+            dat->time = sentence.time.hours * 3600 * 1000 + sentence.time.minutes * 60 * 1000 + sentence.time.seconds * 1000 + sentence.time.microseconds / 1000;
+            dat->altitude = sentence.altitude.value / (double)sentence.altitude.scale;
+            dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
+            dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
+        }
+        break;
+    }
+    case MINMEA_SENTENCE_VTG:
+    {
+        struct minmea_sentence_vtg sentence;
+        bool ret = minmea_parse_vtg(&sentence, rcv);
+        if (ret)
+        {
+            dat->ground_speed = (1 / 3.6) * sentence.speed_kph.value / (double)sentence.speed_kph.scale;
+        }
+        break;
+    }
+    }
+    printf("parsed NMEA: %s\n", rcv);
+}
+
+int gps_find_and_parse_NMEA(char *rcv, gps_data_t *dat)
+{
+    size_t j = 0;
+    size_t end = strlen(rcv);
+    int status = -1;
+    while (status < 0 && j <= end && rcv[j] != '\0')
+    {
+        if (rcv[j] == '$')
+        {
+            uint32_t linelen = get_line_len(&rcv[j]);
+            rcv[j + linelen] = '\0';
+            parse_NMEA(&rcv[j], dat);
+            j += linelen;
+        }
+        j++;
+    }
+}
+
+int gps_send_cmd(uint32_t cmd, uint32_t timeout, const char *fmt, ...)
+{
+    int ret = 0;
+    char rcv[2048] = {};
+    char line[MAX_GPS_CMD_LEN];
+
+    va_list args;
+    va_start(args, fmt);
+    ret = vgps_build_cmd(line, sizeof(line), cmd, fmt, args);
+    va_end(args);
+
+    if (ret <= 0)
+    {
+        printf("build failed\n");
+        return -1;
+    }
+
+    ret = -1;
+    for (int i = 0; i < CMD_RETRIES; i++)
+    {
+
+        DEBUG_PRINT("---------------Sent: %s", line);
+
+        if (gps_transmit_recieve(line, rcv, sizeof(rcv), timeout) == HAL_OK)
+        {
+            DEBUG_PRINT("Answer: \n%s------------\n", rcv)
+
+            int status;
+            while (1)
+            {
+                status = gps_find_and_parse_ack(cmd, rcv);
+                if (status != -1)
+                {
+                    break;
+                }
+                if (gps_recieve(rcv, sizeof(rcv), timeout) != HAL_OK)
+                {
+                    break;
+                }
+                DEBUG_PRINT("Answer secondary: \n%s------------\n", rcv)
+            }
+
+            if (status == 3)
+            {
+                ret = 0;
+                break;
+            }
+            if (status >= 0)
+            {
+                printf("GPS command ack: %d\n", status);
+            }
+        }
+
+        osDelay(20);
+    }
+    return ret;
+}
+
+int gps_set_mode(uint32_t mode, uint32_t timeout)
+{
+    gps_send_cmd(225, timeout, "%u", mode);
+}
+
+int confirm_comm()
+{
+    return gps_send_cmd(0, 100, NULL);
+}
+
+int set_uart_baud(uint32_t baudrate)
+{
+    GPS_UART.Init.BaudRate = 115200;
+    HAL_StatusTypeDef ret = HAL_UART_Init(&GPS_UART);
+    if (ret != HAL_OK)
+    {
+        printf("GPS Uart change failed\n");
+        return -1;
+    }
+    return 0;
+}
+
+
+
+int gps_set_base_interval(uint32_t interval)
+{
+    return gps_send_cmd(220, 100, "%u", interval);
+}
+
+int gps_set_message_interval_scaler(uint32_t gll_int, uint32_t rmc_int, uint32_t vtg_int, uint32_t gga_int, uint32_t gsa_int, uint32_t gsv_int)
+{
+    return gps_send_cmd(314, 100, "%u,%u,%u,%u,%u,%u,0,0,0,0,0,0,0,0,0,0,0,0,0", gll_int, rmc_int, vtg_int, gga_int, gsa_int, gsv_int);
+}
+
+int gps_set_baudrate(uint32_t baudrate)
+{
+
+    uint32_t baud_bef = GPS_UART.Init.BaudRate;
+
+    char line[MAX_GPS_CMD_LEN];
+    gps_build_cmd(line, sizeof(line), 251, "%u", baudrate);
+    gps_send(line, 100);
+
+    set_uart_baud(115200);
+
+    return confirm_comm();
 }
 
 HAL_StatusTypeDef get_nmea_intervall(void)
@@ -131,17 +412,14 @@ HAL_StatusTypeDef get_nmea_intervall(void)
     return HAL_OK;
 }
 
-void rcv_gps_uart_irq_handler(void)
-{
-    osEventFlagsSet(GPS_events, ev_data_available);
-}
-
 #define RCVD_GGA_FLAG BIT(0)
 #define RCVD_VTG_FLAG BIT(1)
 
 void GPS_task(void *pvParameters)
 {
-    char line[2048] = {};
+    char inbuf[2048] = {0};
+    char outbuf[MAX_GPS_CMD_LEN] = {0};
+
     gps_data_t gps_data = {0};
     gps_data_t disc;
 
@@ -149,68 +427,57 @@ void GPS_task(void *pvParameters)
 
     HAL_StatusTypeDef ret = HAL_OK;
 
-    uint8_t ctr = 0;
+    DEBUG_PRINT("---------------------------------------------------------------\nGPS task started\n");
 
-	osEventFlagsSet(init_events, ev_init_gps);
+    if (confirm_comm() < 0)
+    {
+        DEBUG_PRINT("failed to establish connection on 9600, trying 115200\n");
+        set_uart_baud(115200);
+        if (confirm_comm() < 0)
+        {
+            DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
+            return;
+        }
+    }
+    gps_set_mode(4, 900);
+    if (gps_set_baudrate(115200) < 0)
+    {
+        DEBUG_PRINT("failed baud change\n");
+    }
 
+    if (gps_set_base_interval(1000) < 0)
+    {
+        DEBUG_PRINT("failed interval change\n");
+    }
+    if (gps_set_message_interval_scaler(0, 0, 1, 1,0, 0) < 0)
+    {
+        DEBUG_PRINT("failed individual message interval change\n");
+    }
+
+    if (gps_send_cmd(250, 100, "%u", 115200) < 0) // set dgps baud
+    {
+        DEBUG_PRINT("failed interval change\n");
+    }
+     if (gps_send_cmd(301, 100, "%u", 1) < 0) // set dgps to rtcm
+    {
+         DEBUG_PRINT("failed interval change\n");
+     }
+
+    if (gps_send_cmd(313, 100, "%u", 1) < 0) // enable SBAS
+    {
+        DEBUG_PRINT("failed interval change\n");
+    }
+
+
+
+
+        gps_set_mode(0, 1000); // GPS doesn't seem to confirm the first attempt so has to fail
 
     while (1)
     {
-
-        HAL_UARTEx_ReceiveToIdle_DMA(&GPS_UART, line, sizeof(line));
-        osEventFlagsWait(GPS_events, ev_data_available, NULL, osWaitForever);
-        gps_data.ticks = osKernelGetTickCount();
-        osEventFlagsClear(GPS_events, ev_data_available);
-        
-        char *ptr = line;
-        uint32_t flag = 0;
-        while (*ptr != '\0')
-        {
-
-            if (!strncmp((char *)ptr + 3, "GGA", 3))
-            {
-                struct minmea_sentence_gga sentence;
-                bool ret = minmea_parse_gga(&sentence, line);
-                if (ret)
-                {
-
-                    gps_data.time = sentence.time.hours * 3600* 1000 + sentence.time.minutes * 60 * 1000 + sentence.time.seconds * 1000 + sentence.time.microseconds / 1000; 
-                    gps_data.altitude = sentence.altitude.value / (double)sentence.altitude.scale;
-                    gps_data.latitude = sentence.latitude.value / (double)sentence.latitude.scale;
-                    gps_data.longitude = sentence.longitude.value / (double)sentence.longitude.scale;
-                    flag |= RCVD_GGA_FLAG;
-                }
-            }
-
-            if (!strncmp((char *)ptr + 3, "VTG", 3))
-            {
-                struct minmea_sentence_vtg sentence;
-                bool ret = minmea_parse_vtg(&sentence, line);
-                if (ret)
-                {
-                    gps_data.ground_speed = (1 / 3.6) * sentence.speed_kph.value / (double)sentence.speed_kph.scale;
-                    flag |= RCVD_VTG_FLAG;
-                }
-            }
-
-            while (*ptr != '\n' && *ptr)
-            {
-                ptr++;
-            }
-            if (!*ptr)
-            {
-                break;
-            }
-            ptr++;
-        }
-
-        if (flag & RCVD_GGA_FLAG && flag & RCVD_VTG_FLAG)
-        {
-            while (osMessageQueueGetCount(gps_data_queue_handle) != 0)
-            {
-                osMessageQueueGet(gps_data_queue_handle, &disc, 0, 0);
-            }
-            osMessageQueuePut(gps_data_queue_handle, &gps_data, 0, 0);
-        }
+        gps_recieve(inbuf, sizeof(inbuf), 1100);
+        gps_find_and_parse_NMEA(inbuf, &gps_data);
+        printf("\n - \n");
+        osDelay(100);
     }
 }
