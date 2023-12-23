@@ -63,23 +63,20 @@ void processing_task(void *pvParameters)
 	uint32_t ctr = 0;
 	while (1)
 	{
-		// osSemaphoreRelease(pth_timing_semaphore_handle);
-		// osSemaphoreRelease(imu_timing_semaphore_handle);
-
+		printf("a\n");
 		osEventFlagsSet(timing_events, ev_rcv_pth | ev_rcv_imu);
-
-		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, OUTPUT_RATE / 2);
+		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 1000 / OUTPUT_RATE / 2);
 		osMessageQueueGet(imu_data_queue_handle, &imu_data, 0, 0);
-		osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 0);
 		was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2); // TODO: could go into sleep here
-
 		if (was_delayed == pdFALSE)
 		{
 			printf("Measurements took too long \n");
 		}
+		osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 1000 / OUTPUT_RATE );
+		printf("Time: hours: %d, minutes: %d, seconds: %d, microseconds: %d \n", gps_data.time.hours, gps_data.time.minutes, gps_data.time.seconds, gps_data.time.microseconds);
 
 		uint32_t t_gps = gps_data.time.hours * 3600 * 1000 + gps_data.time.minutes * 60 * 1000 + gps_data.time.seconds * 1000 + gps_data.time.microseconds / 1000;
-		time_ms = t_gps+ (osKernelGetTickCount() - gps_data.ticks);
+		time_ms = t_gps + (osKernelGetTickCount() - gps_data.ticks);
 		if (last_time_ms == 0)
 		{
 			last_time_ms = time_ms;
@@ -115,7 +112,7 @@ void processing_task(void *pvParameters)
 			osMessageQueuePut(rpi_tx_queue_handle, &rpi_data, 0, QUEUE_WAIT_TIME);
 			csv_dump_data_t csv_data =
 				{
-					.time_ms = time_ms,// (ctr >= 10000) ? (uint32_t)-1 : time_ms, TODO remove
+					.time_ms = time_ms, // (ctr >= 10000) ? (uint32_t)-1 : time_ms, TODO remove
 					.hum = pth_data.humidity,
 					.v_ground = ground_speed,
 					.v_air = air_speed,

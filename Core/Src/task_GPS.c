@@ -62,6 +62,10 @@ void rcv_gps_uart_irq_handler(void)
 {
     osEventFlagsSet(GPS_events, ev_data_available);
 }
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    printf("UART RX complete\n");
+}
 
 HAL_StatusTypeDef gps_transmit_recieve(const char *cmd, char *buffer, uint16_t length, uint32_t timeout)
 {
@@ -85,7 +89,7 @@ HAL_StatusTypeDef gps_transmit_recieve(const char *cmd, char *buffer, uint16_t l
         }
         else
         {
-            buffer[length - GPS_UART.RxXferCount] = '\0';
+            // buffer[length - GPS_UART.RxXferCount] = '\0';
         }
     }
     HAL_UART_AbortReceive(&GPS_UART);
@@ -240,10 +244,13 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
     {
         struct minmea_sentence_rmc sentence;
         bool ret = minmea_parse_rmc(&sentence, rcv);
+        printf("parsing RMC: %d\n", ret);
+
+
         if (ret)
         {
+            dat->date=sentence.date;
             dat->time = sentence.time;
-            dat->date = sentence.date;
             dat->ticks = osKernelGetTickCount();
             dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
             dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
@@ -257,7 +264,6 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
 int gps_find_and_parse_NMEA(char *rcv, gps_data_t *dat)
 {
     memset(dat, -1, sizeof(*dat));
-    DEBUG_PRINT("Parsing NMEA: \n%s\n", rcv);
     size_t j = 0;
     size_t end = strlen(rcv);
     int status = -1;
@@ -339,7 +345,7 @@ int gps_set_mode(uint32_t mode, uint32_t timeout)
 
 int confirm_comm()
 {
-    return gps_send_cmd(0, 100, NULL);
+    return gps_send_cmd(0, 300, NULL);
 }
 
 int set_uart_baud(uint32_t baudrate)
@@ -409,12 +415,12 @@ void GPS_task(void *pvParameters)
 
     // gps_set_mode(4, 900);
 
-    if (gps_set_baudrate(115200) < 0)
+    if (gps_set_baudrate(9600) < 0) // TODO: set to 115200 if possible
     {
         DEBUG_PRINT("failed baud change\n");
     }
 
-    if (gps_set_base_interval(1000) < 0)
+    if (gps_set_base_interval(1000 / OUTPUT_RATE) < 0)
     {
         DEBUG_PRINT("failed interval change\n");
     }
@@ -437,13 +443,12 @@ void GPS_task(void *pvParameters)
     //       DEBUG_PRINT("failed interval change\n");
     //   }
     // gps_set_mode(0, 1000); // GPS doesn't seem to confirm the first attempt so has to fail
-
+    osEventFlagsSet(init_events, ev_init_gps);
     while (1)
     {
         gps_recieve(inbuf, sizeof(inbuf), 1100);
-        printf("------------------------\n%s\n----------------", inbuf);
+        DEBUG_PRINT("GPS:\n%s\n", inbuf);
         gps_find_and_parse_NMEA(inbuf, &gps_data);
-        printf("\n - \n");
-        osDelay(20);
+        osMessageQueuePut(gps_data_queue_handle, &gps_data, 0, 0);
     }
 }

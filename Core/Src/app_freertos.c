@@ -160,6 +160,7 @@ void MX_FREERTOS_Init(void) {
   pth_data_queue_handle = osMessageQueueNew(PTH_DATA_QUEUE_SIZE, PTH_DATA_SIZE, NULL);
   imu_data_queue_handle = osMessageQueueNew(IMU_DATA_QUEUE_SIZE, IMU_DATA_SIZE, NULL);
   airsp_data_queue_handle = osMessageQueueNew(AIRSPEED_DATA_QUEUE_SIZE, AIRSPEED_DATA_SIZE, NULL);
+  gps_data_queue_handle = osMessageQueueNew(GPS_DATA_QUEUE_SIZE, GPS_DATA_SIZE, NULL);
 
   /* USER CODE END RTOS_QUEUES */
   /* creation of defaultTask */
@@ -167,14 +168,14 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  //PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
-  //proc_TaskHandle = osThreadNew(processing_task, NULL, &PTH_TaskAttributes);
-//
-  //IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
-  //AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
+  PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
+  proc_TaskHandle = osThreadNew(processing_task, NULL, &PTH_TaskAttributes);
+
+  IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
+  AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
   GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
-  //rpi_comm_TaskHandle = osThreadNew(comm_rpi_task, NULL, &SD_TaskAttributes);
-  //SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
+  rpi_comm_TaskHandle = osThreadNew(comm_rpi_task, NULL, &SD_TaskAttributes);
+  SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
 
   /* USER CODE END RTOS_THREADS */
 
