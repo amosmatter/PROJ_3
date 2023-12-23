@@ -29,7 +29,7 @@
 
 #include "common_task_defs.h"
 
-
+#include "system_time.h"
 #include <time.h>
 #define _USE_WRITE 1
 #define _USE_IOCTL 1
@@ -100,6 +100,7 @@ extern SPI_HandleTypeDef SPI;
 static volatile DSTATUS Stat = STA_NOINIT; /* Physical drive status */
 
 static BYTE CardType; /* Card type flags */
+extern RTC_HandleTypeDef hrtc;
 
 uint32_t spiTimerTickStart;
 uint32_t spiTimerTickDelay;
@@ -117,19 +118,16 @@ uint8_t SPI_Timer_Status()
 
 DWORD get_fattime(void)
 {
-	/*time_t current_time = time(NULL);
-	struct tm *timeinfo = localtime(&current_time);
-
-	// Calculate FAT file time format
+	struct tm timeinfo;
+	get_time(&timeinfo, NULL);
 	DWORD fattime = 0;
-	fattime |= ((timeinfo->tm_year - 80) << 25);  // Year since 1980
-	fattime |= ((timeinfo->tm_mon + 1) << 21);   // Month (1 - 12)
-	fattime |= (timeinfo->tm_mday << 16);        // Day of the month (1 - 31)
-	fattime |= (timeinfo->tm_hour << 11);        // Hour (0 - 23)
-	fattime |= (timeinfo->tm_min << 5);          // Minute (0 - 59)
-	fattime |= (timeinfo->tm_sec >> 1);          // Second divided by 2 (0 - 29)
-*/
-	return 0x43A62B06;
+	fattime |= ((DWORD)timeinfo.tm_year - 80) << 25;
+	fattime |= (DWORD)timeinfo.tm_mon << 21;
+	fattime |= (DWORD)timeinfo.tm_mday << 16;
+	fattime |= (DWORD)timeinfo.tm_hour << 11;
+	fattime |= (DWORD)timeinfo.tm_min << 5;
+	fattime |= (DWORD)timeinfo.tm_sec >> 1;
+    return fattime;
 }
 /*-----------------------------------------------------------------------*/
 /* SPI controls (Platform dependent)                                     */

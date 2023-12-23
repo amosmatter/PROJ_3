@@ -34,6 +34,7 @@
 #include "task_airspeed.h"
 #include "task_processing.h"
 #include "task_comm_rpi.h"
+#include "system_time.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -133,7 +134,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+	init_time();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */

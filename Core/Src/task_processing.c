@@ -9,6 +9,8 @@
 #include "FreeRTOS.h"
 #include "math.h"
 #include "main.h"
+#include "system_time.h"
+extern RTC_HandleTypeDef hrtc;
 
 #define QUEUE_WAIT_TIME (1000 / OUTPUT_RATE)
 
@@ -42,13 +44,19 @@ double get_air_speed(double temperature_c, double abs_pressure, double diff_pres
 
 void processing_task(void *pvParameters)
 {
-
-	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
-
 	BaseType_t was_delayed = {0};
 	PTH_data_t pth_data = {0};
 	imu_data_t imu_data = {0};
 	gps_data_t gps_data = {0};
+	rpi_tx_data_t rpi_data = {0};
+
+	csv_dump_data_t csv_data = {0};
+
+	osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 10000); // TODO gracefully handle timeout
+	osMessageQueuePut(csv_queue_handle, &csv_data, 0, 10000);
+
+	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 10000);
+	printf("all inited \n");
 
 	uint32_t lastcalc = osKernelGetTickCount();
 	uint32_t time_ms = 0;
@@ -59,11 +67,9 @@ void processing_task(void *pvParameters)
 
 	TickType_t ticks = osKernelGetTickCount();
 
-	printf("all inited \n");
 	uint32_t ctr = 0;
 	while (1)
 	{
-		printf("a\n");
 		osEventFlagsSet(timing_events, ev_rcv_pth | ev_rcv_imu);
 		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 1000 / OUTPUT_RATE / 2);
 		osMessageQueueGet(imu_data_queue_handle, &imu_data, 0, 0);
@@ -72,11 +78,11 @@ void processing_task(void *pvParameters)
 		{
 			printf("Measurements took too long \n");
 		}
-		osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 1000 / OUTPUT_RATE );
-		printf("Time: hours: %d, minutes: %d, seconds: %d, microseconds: %d \n", gps_data.time.hours, gps_data.time.minutes, gps_data.time.seconds, gps_data.time.microseconds);
+		struct tm time = {};
+		get_time(&time, &time_ms);
 
-		uint32_t t_gps = gps_data.time.hours * 3600 * 1000 + gps_data.time.minutes * 60 * 1000 + gps_data.time.seconds * 1000 + gps_data.time.microseconds / 1000;
-		time_ms = t_gps + (osKernelGetTickCount() - gps_data.ticks);
+		printf("Time: %02d:%02d:%02d:%03d \n", time.tm_hour, time.tm_min, time.tm_sec, time_ms % 1000);
+		printf("Date: %02d-%02d-%02d \n", time.tm_mday, time.tm_mon + 1, time.tm_year +1900);
 		if (last_time_ms == 0)
 		{
 			last_time_ms = time_ms;
@@ -92,48 +98,44 @@ void processing_task(void *pvParameters)
 		double d_energy = energy - last_energy;
 		if (last_time_ms != 0)
 		{
-			rpi_tx_data_t rpi_data =
-				{
-					.time_ms = time_ms,
-					.hum = pth_data.humidity,
-					.v_ground = ground_speed,
-					.v_air = air_speed,
-					.temp = pth_data.temperature,
-					.press = pth_data.pressure,
-					.longt = gps_data.longitude,
-					.lat = gps_data.latitude,
-					.energy = d_energy,
-					.yaw = imu_data.yaw,
-					.pitch = imu_data.pitch,
-					.roll = imu_data.roll
 
-				};
+			rpi_data.hum = pth_data.humidity;
+			rpi_data.v_ground = ground_speed;
+			rpi_data.v_air = air_speed;
+			rpi_data.temp = pth_data.temperature;
+			rpi_data.press = pth_data.pressure;
+			rpi_data.longt = gps_data.longitude;
+			rpi_data.lat = gps_data.latitude;
+			rpi_data.energy = d_energy;
+			rpi_data.yaw = imu_data.yaw;
+			rpi_data.pitch = imu_data.pitch;
+			rpi_data.roll = imu_data.roll;
+
 			printf("ctr %d \n", ctr++);
 			osMessageQueuePut(rpi_tx_queue_handle, &rpi_data, 0, QUEUE_WAIT_TIME);
-			csv_dump_data_t csv_data =
-				{
-					.time_ms = time_ms, // (ctr >= 10000) ? (uint32_t)-1 : time_ms, TODO remove
-					.hum = pth_data.humidity,
-					.v_ground = ground_speed,
-					.v_air = air_speed,
-					.temp = pth_data.temperature,
-					.press = pth_data.pressure,
-					.longt = gps_data.longitude,
-					.lat = gps_data.latitude,
-					.energy = d_energy,
-					.yaw = imu_data.yaw,
-					.pitch = imu_data.pitch,
-					.roll = imu_data.roll};
-			osMessageQueuePut(csv_queue_handle, &csv_data, 0, 0);
-		}
-		last_energy = energy;
-		last_altitude = gps_data.altitude;
-		last_time_ms = time_ms;
 
-		was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2);
-		if (was_delayed == pdFALSE)
-		{
-			printf("Processing task had to wait too long \n");
+				csv_data.time_ms =  (ctr >= 100) ? (uint32_t)-1 : time_ms;// TODO remove
+				csv_data.hum = pth_data.humidity;
+				csv_data.v_ground = ground_speed;
+				csv_data.v_air = air_speed;
+				csv_data.temp = pth_data.temperature;
+				csv_data.press = pth_data.pressure;
+				csv_data.longt = gps_data.longitude;
+				csv_data.lat = gps_data.latitude;
+				csv_data.energy = d_energy;
+				csv_data.yaw = imu_data.yaw;
+				csv_data.pitch = imu_data.pitch;
+				csv_data.roll = imu_data.roll;
+
+				osMessageQueuePut(csv_queue_handle, &csv_data, 0, 0);
+			last_energy = energy;
+			last_altitude = gps_data.altitude;
+			last_time_ms = time_ms;
+
+			was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2);
+			if (was_delayed == pdFALSE)
+			{
+				printf("Processing task had to wait too long \n");
+			}
 		}
-	}
-}
+	}}

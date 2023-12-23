@@ -8,65 +8,30 @@
 #include "common_task_defs.h"
 #include <stdarg.h>
 #include "math.h"
+#include "system_time.h"
 
-#define HEADER "Time [s]; Humidity [%]; Groundspeed [m/s]; Airspeed [m/s]; Temperature [deg C]; Airpressure [kPa]; Longitude; Latitude; Flight Height [m]; Roll [deg]; Pitch [deg]; Yaw [deg]; Energy [m];Energieableitung[m/s];"
+#define HEADER "Time [s]; Humidity [percent]; Groundspeed [m/s]; Airspeed [m/s]; Temperature [deg C]; Airpressure [kPa]; Longitude; Latitude; Flight Height [m]; Roll [deg]; Pitch [deg]; Yaw [deg]; Energy [m];Energieableitung[m/s];"
 #define DBL_FORMATTING "%.4+e;\t"
-#define DBL_FORMATTING_SZ (1 + 2 + 4 + 4 + 1 + 1) // sign +  2 before frac +  frac + e + exp sign + 2 exp num + ; + tab
 
-char filebuffer[2048];
+#define RETRIES 99
+#define RETRY_PERIOD 20
 
-char *write_val(char *buffer, size_t *maxlen, size_t expected_sz, const char *fmt, ...)
+int write_dbl(FIL *buffer, double val)
 {
-    if (!buffer || !maxlen || !fmt)
-    {
-        return NULL;
-    }
-
-    int ret = 0;
-    if (*maxlen >= expected_sz)
-    {
-        va_list args;
-        va_start(args, fmt);
-        ret = vsnprintf(buffer, *maxlen, fmt, args);
-        va_end(args);
-    }
-
-    if (ret != expected_sz)
-    {
-        ret = snprintf(buffer, *maxlen, ";");
-        if (ret != 1)
-        {
-            return NULL;
-        }
-    }
-
-    *maxlen -= ret;
-    buffer += ret;
-    return buffer;
+    return f_printf(buffer, DBL_FORMATTING, val);
+}
+int write_str(FIL *buffer, const char *val)
+{
+    return f_printf(buffer, "%s", val);
 }
 
-char *write_timestamp(char *buffer, size_t *maxlen, double val)
+void write_line(FIL *buffer, csv_dump_data_t *data)
 {
-    return write_val(buffer, maxlen, DBL_FORMATTING_SZ, DBL_FORMATTING, val);
-}
-char *write_dbl(char *buffer, size_t *maxlen, double val)
-{
-    return write_val(buffer, maxlen, DBL_FORMATTING_SZ, DBL_FORMATTING, val);
-}
+    write_dbl(buffer, data->pitch / M_PI * 180);
+    write_dbl(buffer, data->roll / M_PI * 180);
+    write_dbl(buffer, data->yaw / M_PI * 180);
 
-char *write_str(char *buffer, size_t *maxlen, char *val)
-{
-    return write_val(buffer, maxlen, strlen(val), "%s", val);
-}
-
-char *write_line(char *buffer, size_t *maxlen, csv_dump_data_t *data)
-{
-    buffer = write_dbl(buffer, &maxlen, data->pitch / M_PI * 180);
-    buffer = write_dbl(buffer, &maxlen, data->roll / M_PI * 180);
-    buffer = write_dbl(buffer, &maxlen, data->yaw / M_PI * 180);
-
-    buffer = write_str(buffer, &maxlen, "\r\n");
-    return buffer;
+    write_str(buffer, "\r\n");
 }
 
 void SD_task(void *pvParameters)
@@ -74,72 +39,128 @@ void SD_task(void *pvParameters)
     csv_dump_data_t data_in;
 
     FATFS fs;
-    FATFS *fs_ptr = &fs;
-    FRESULT res;
-    DIR dir;
-    FILINFO fileInfo;
     FIL file;
 
-    osEventFlagsWait(init_events, ev_init_in, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
+    // imu and pth share the spi bus so allow them to go first
+    osEventFlagsWait(init_events, ev_init_imu | ev_init_pth, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
+    uint32_t ctr = 0;
 
-    res = f_mount(fs_ptr, "", 1); // Mounts the default drive
-    while (res != FR_OK)
-    {
-
-        printf("SD failed to mount. Error: %d\n", res);
-        osDelay(100);
-        res = f_mount(&fs, "", 1); // Mounts the default drive
-    }
-
-    // Open the directory
-    res = f_opendir(&dir, "/"); // Replace "/" with your desired directory path
-    if (res != FR_OK)
-    {
-        printf("Failed to open directory. Error code: %d\n", res);
-        osDelay(-1);
-    }
-
-    printf("Listing contents of the directory:\n");
     while (1)
     {
-        res = f_readdir(&dir, &fileInfo);
-        if (res != FR_OK || fileInfo.fname[0] == 0)
-            break; // Break on error or end of directory
+        FRESULT res = f_mount(&fs, "", 1); // Mounts the default drive
+        if (res == FR_OK)
+        {
+            break;
+        }
 
-        // Print the file/folder name
-        printf("%s\n", fileInfo.fname);
+        if (ctr++ >= RETRIES)
+        {
+            printf("Giving up on SD Card! Error %d\n", res);
+            osDelay(-1); // Go to sleep
+        }
+
+        DEBUG_PRINT("SD failed to mount. Error: %d\n", res);
+        osDelay(RETRY_PERIOD);
     }
 
-    /* res = f_mkdir("/test");
-     if (res != FR_OK)
-     {
-         printf("Failed to make directory. Error code: %d\n", res);
-         osDelay(-1);
-     }*/
+    struct tm timeinfo;
+    get_time(&timeinfo, NULL);
 
-    res = f_opendir(&dir, "/test"); // Replace "/" with your desired directory path
-    if (res != FR_OK)
+    char folderName[64];
+    snprintf(folderName, 64, "0:/logs/%04d_%02d_%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
+
+    char fileName[96];
+    snprintf(fileName, 96, "%s/%04d_%02d_%02d___%02d_%02d_%02d.csv",folderName,timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
+    DEBUG_PRINT("Folder name: %s\n", folderName);
+    DEBUG_PRINT("File name: %s\n", fileName);
+
+    while (1)
     {
-        printf("Failed to open directory. Error code: %d\n", res);
-        osDelay(-1);
-    }
-    // Open or create a file named "data.csv"
-    res = f_open(&file, "data.csv", FA_CREATE_ALWAYS | FA_WRITE);
-    if (res != FR_OK)
-    {
-        printf("Failed to open/create file. Error code: %d\n", res);
-        osDelay(-1);
+        FRESULT res = f_mkdir("logs");
+        if (res == FR_OK)
+        {
+            break;
+        }
+        if (res == FR_EXIST)
+        {
+            break;
+        }
+        if (ctr++ > RETRIES)
+        {
+            printf("Giving up on SD Card! Error %d\n", res);
+            osDelay(-1); // Go to sleep
+        }
+
+        DEBUG_PRINT("Failed with logs folder. Error code: %d\n", res);
+        osDelay(RETRY_PERIOD);
     }
 
-    // Write header to the file
-    sprintf(filebuffer, "%s\n", HEADER);
-    UINT bytes_written;
-    res = f_write(&file, filebuffer, strlen(filebuffer), &bytes_written);
-    if (res != FR_OK)
+    while (1)
     {
-        printf("Failed to write to file. Error code: %d\n", res);
-        f_close(&file);
-        osDelay(-1);
+        FRESULT res = f_mkdir(folderName);
+        if (res == FR_OK)
+        {
+            break;
+        }
+        if (res == FR_EXIST)
+        {
+            break;
+        }
+
+        if (ctr++ > RETRIES)
+        {
+            printf("Giving up on SD Card! Error %d\n", res);
+            osDelay(-1); // Go to sleep
+        }
+        DEBUG_PRINT("Failed to create daily folder. Error code: %d\n", res);
+        osDelay(RETRY_PERIOD);
+    }
+
+    while (1)
+    {
+
+        FRESULT res = f_open(&file, fileName, FA_WRITE | FA_CREATE_NEW);
+        if (res == FR_OK)
+        {
+            break;
+        }
+
+        if (ctr++ > RETRIES)
+        {
+            printf("Giving up on SD Card! Error %d\n", res);
+            osDelay(-1); // Go to sleep
+        }
+
+		if (res == FR_EXIST)
+		{
+			snprintf(fileName, 96, "%s/%04d_%02d_%02d___%02d_%02d_%02d__%03lu.csv",folderName,timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, ctr);
+			continue;
+		}
+
+        DEBUG_PRINT("Failed to create file! Error %d\n", res);
+
+    osDelay(RETRY_PERIOD);
+    }
+
+    DEBUG_PRINT("File opened: %s\n", fileName);
+    ctr = 0;
+    f_lseek(&file, 0);
+
+    while (1)
+    {
+        int ret = f_printf(&file, "%s\n", HEADER);
+        if (ret > 0)
+        {
+            break;
+        }
+        if (ctr > RETRIES)
+        {
+            printf("Giving up on SD Card! Error %d\n", ret);
+            osDelay(-1);
+        }
+        DEBUG_PRINT("Failed to write Header");
+        osDelay(RETRY_PERIOD);
     }
 
     osEventFlagsSet(init_events, ev_init_csv);
@@ -151,15 +172,9 @@ void SD_task(void *pvParameters)
         {
             break;
         }
-        write_line(filebuffer, sizeof(filebuffer) - 1, &data_in);
-        printf("%s", filebuffer);
-        res = f_write(&file, filebuffer, strlen(filebuffer), &bytes_written);
-        if (res != FR_OK)
-        {
-            printf("Failed to write to file. Error code: %d\n", res);
-            break;
-        }
+        write_line(&file, &data_in);
     }
+    printf("Closing file\n");
     // Close the file
     f_close(&file);
     osDelay(-1);

@@ -56,7 +56,7 @@
 /* This option switches f_forward() function. (0:Disable or 1:Enable) */
 
 
-#define FF_USE_STRFUNC	0
+#define FF_USE_STRFUNC	1
 #define FF_PRINT_LLI	1
 #define FF_PRINT_FLOAT	1
 #define FF_STRF_ENCODE	3
@@ -84,7 +84,7 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define FF_CODE_PAGE	932
+#define FF_CODE_PAGE	850
 /* This option specifies the OEM code page to be used on the target system.
 /  Incorrect code page setting can cause a file open failure.
 /
@@ -113,7 +113,7 @@
 */
 
 
-#define FF_USE_LFN		0
+#define FF_USE_LFN		2
 #define FF_MAX_LFN		255
 /* The FF_USE_LFN switches the support for LFN (long file name).
 /
