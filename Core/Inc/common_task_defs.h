@@ -67,9 +67,7 @@ typedef struct
 
 typedef struct
 {
-  struct minmea_date date;
-  struct minmea_time time;
-  uint32_t ticks;
+
   double altitude;
   double latitude;
   double longitude;
@@ -97,7 +95,6 @@ typedef struct
 
 typedef struct
 {
-  uint32_t time_ms;
   double hum;      // humidity in 0.002 %
   double v_ground; // ground speed in 0.005 m/s
   double v_air;    // air speed in 0.01 m/s
@@ -131,6 +128,9 @@ typedef struct
   double yaw;           // yaw in 0.0002 rad
   double energy;        // energy in 0.25 m
 } csv_dump_data_t;
+
+
+
 
 #define CSV_DUMP_DATA_SIZE (sizeof(csv_dump_data_t))
 #define CSV_DUMP_DATA_QUEUE_SIZE (10)

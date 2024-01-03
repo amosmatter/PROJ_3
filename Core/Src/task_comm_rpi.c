@@ -11,7 +11,7 @@
 #include "spi_common.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "system_time.h"
 typedef struct __packed
 {
     uint32_t time;     // time in seconds, shifted left by 8
@@ -38,7 +38,10 @@ void comm_rpi_task(void *pvParameters)
     while (1)
     {
         osMessageQueueGet(rpi_tx_queue_handle, &rpi_in_data, 0, osWaitForever);
-        uint64_t time = rpi_in_data.time_ms;
+        struct tm timeinfo;
+        uint32_t ms = 0;
+        get_time(&timeinfo, &ms);
+        uint32_t  time = ms + timeinfo.tm_sec * 1000 + timeinfo.tm_min * 60 * 1000 + timeinfo.tm_hour * 3600 * 1000;
         time <<= 8;
         time /= 1000;
 

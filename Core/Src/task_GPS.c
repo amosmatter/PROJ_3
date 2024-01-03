@@ -9,11 +9,14 @@
 #include "common_task_defs.h"
 #include "FreeRTOS.h"
 #include <stdarg.h>
+#include "system_time.h"
 
 enum en_gps_events
 {
     ev_data_available = BIT(0)
 };
+
+extern RTC_HandleTypeDef hrtc;
 
 #define MAX_GPS_CMD_LEN 128
 #define CMD_RETRIES 10
@@ -246,12 +249,20 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
         bool ret = minmea_parse_rmc(&sentence, rcv);
         printf("parsing RMC: %d\n", ret);
 
-
         if (ret)
         {
-            dat->date=sentence.date;
-            dat->time = sentence.time;
-            dat->ticks = osKernelGetTickCount();
+
+            struct tm time = {};
+            time.tm_hour = sentence.time.hours;
+            time.tm_min = sentence.time.minutes;
+            time.tm_sec = sentence.time.seconds;
+
+            time.tm_year = sentence.date.year + 100;
+            time.tm_mon = sentence.date.month - 1;
+            time.tm_mday = sentence.date.day;
+            uint32_t ms = sentence.time.microseconds / 1000;
+            set_time(&time, &ms);
+            
             dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
             dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
             dat->ground_speed = KNOTS_TO_MS * sentence.speed.value / (double)sentence.speed.scale;

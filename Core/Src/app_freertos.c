@@ -24,6 +24,16 @@
 #include "cmsis_os2.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include "common_task_defs.h"
+#include "task_PTH.h"
+#include "task_IMU.h"
+#include "task_GPS.h"
+#include "task_SD.h"
+#include "task_airspeed.h"
+#include "task_processing.h"
+#include "task_comm_rpi.h"
+#include "system_time.h"
 
 /* USER CODE END Includes */
 
@@ -70,7 +80,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+	init_time();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
