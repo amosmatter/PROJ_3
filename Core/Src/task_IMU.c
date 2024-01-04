@@ -36,24 +36,12 @@ ICM_20948_Device_t myICM;
 ICM_20948_Status_e imu_write_spi(uint8_t reg, uint8_t *data, uint32_t len, void *user)
 {
 	HAL_StatusTypeDef ret = SPI_write_burst_implicit(user, reg, data, len, IMU_nCS_GPIO_Port, IMU_nCS_Pin);
-
-	if (ret != HAL_OK)
-	{
-		return ICM_20948_Stat_Err;
-	}
-
 	return (ret == HAL_OK) ? ICM_20948_Stat_Ok : ICM_20948_Stat_Err;
 }
 
 ICM_20948_Status_e imu_read_spi(uint8_t reg, uint8_t *buff, uint32_t len, void *user)
 {
 	HAL_StatusTypeDef ret = SPI_read_burst_implicit(user, reg, buff, len, IMU_nCS_GPIO_Port, IMU_nCS_Pin);
-
-	if (ret != HAL_OK)
-	{
-		return ICM_20948_Stat_Err;
-	}
-
 	return (ret == HAL_OK) ? ICM_20948_Stat_Ok : ICM_20948_Stat_Err;
 }
 

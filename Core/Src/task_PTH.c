@@ -106,7 +106,7 @@ static int8_t get_pth_data(uint32_t period, struct bme280_dev *dev, struct bme28
 
 void PTH_task(void *pvParameters)
 {
-
+	printf("Entered \n");
     int8_t rslt;
     uint32_t period;
     struct bme280_dev dev;

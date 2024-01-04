@@ -397,6 +397,7 @@ ICM_20948_Status_e ICM_20948_check_id(ICM_20948_Device_t *pdev)
   }
   if (whoami != ICM_20948_WHOAMI)
   {
+	  printf("got id %d\n", whoami);
     return ICM_20948_Stat_WrongID;
   }
   return retval;

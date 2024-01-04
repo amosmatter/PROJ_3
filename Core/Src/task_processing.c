@@ -10,7 +10,6 @@
 #include "math.h"
 #include "main.h"
 #include "system_time.h"
-extern RTC_HandleTypeDef hrtc;
 
 #define QUEUE_WAIT_TIME (1000 / OUTPUT_RATE)
 

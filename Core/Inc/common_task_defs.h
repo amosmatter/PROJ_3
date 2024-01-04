@@ -11,6 +11,7 @@
 #include "task_PTH.h"
 #include <stdint.h>
 #include "minmea-master/minmea.h"
+
 extern osThreadId_t PTH_TaskHandle;
 extern osThreadId_t IMU_TaskHandle;
 extern osThreadId_t GPS_TaskHandle;
@@ -55,6 +56,15 @@ enum e_timing_events
 };
 
 extern osEventFlagsId_t timing_events;
+
+enum e_general_events
+{
+  ev_button_pressed = BIT(0),
+};
+
+extern osEventFlagsId_t general_events;
+
+
 
 typedef struct
 {

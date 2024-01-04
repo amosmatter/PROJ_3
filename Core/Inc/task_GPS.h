@@ -9,5 +9,5 @@
 #define INC_TASK_GPS_H_
 
 void GPS_task(void *pvParameters);
-
+void rcv_gps_uart_irq_handler(void);
 #endif /* INC_TASK_GPS_H_ */

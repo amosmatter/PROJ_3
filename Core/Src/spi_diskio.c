@@ -100,7 +100,6 @@ extern SPI_HandleTypeDef SPI;
 static volatile DSTATUS Stat = STA_NOINIT; /* Physical drive status */
 
 static BYTE CardType; /* Card type flags */
-extern RTC_HandleTypeDef hrtc;
 
 uint32_t spiTimerTickStart;
 uint32_t spiTimerTickDelay;

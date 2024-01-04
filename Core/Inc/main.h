@@ -58,38 +58,36 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define MAVLINK huart1
 #define GPS_UART huart2
-#define MAVLINK huart3
-#define SPI hspi3
-#define I2C hi2c2
-#define BUT_REF_INT_Pin GPIO_PIN_13
-#define BUT_REF_INT_GPIO_Port GPIOC
-#define BUT_REF_INT_EXTI_IRQn EXTI13_IRQn
-#define IMU_FSYNC_Pin GPIO_PIN_3
-#define IMU_FSYNC_GPIO_Port GPIOF
-#define IMU_INT_Pin GPIO_PIN_5
-#define IMU_INT_GPIO_Port GPIOF
-#define IMU_INT_EXTI_IRQn EXTI5_IRQn
-#define SD_nCS_Pin GPIO_PIN_13
-#define SD_nCS_GPIO_Port GPIOF
-#define RPI_nCS_Pin GPIO_PIN_14
-#define RPI_nCS_GPIO_Port GPIOF
-#define DEBUG_TRIGGER_Pin GPIO_PIN_0
-#define DEBUG_TRIGGER_GPIO_Port GPIOG
-#define PTH_nCS_Pin GPIO_PIN_11
-#define PTH_nCS_GPIO_Port GPIOE
-#define LED_RED_Pin GPIO_PIN_2
-#define LED_RED_GPIO_Port GPIOG
-#define LED_GREEN_Pin GPIO_PIN_7
-#define LED_GREEN_GPIO_Port GPIOC
-#define USART1_TX_Pin GPIO_PIN_9
-#define USART1_TX_GPIO_Port GPIOA
-#define USART1_RX_Pin GPIO_PIN_10
-#define USART1_RX_GPIO_Port GPIOA
-#define IMU_nCS_Pin GPIO_PIN_2
-#define IMU_nCS_GPIO_Port GPIOD
-#define LED_READY_Pin GPIO_PIN_7
+#define I2C hi2c1
+#define SPI hspi1
+#define CONSOLE_UART huart3
+#define I_MON_Pin GPIO_PIN_14
+#define I_MON_GPIO_Port GPIOC
+#define PS_FLT_N_Pin GPIO_PIN_15
+#define PS_FLT_N_GPIO_Port GPIOC
+#define PPS_Pin GPIO_PIN_0
+#define PPS_GPIO_Port GPIOA
+#define SD_nCS_Pin GPIO_PIN_1
+#define SD_nCS_GPIO_Port GPIOB
+#define IMU_FSYNC_Pin GPIO_PIN_13
+#define IMU_FSYNC_GPIO_Port GPIOB
+#define IMU_INT_Pin GPIO_PIN_14
+#define IMU_INT_GPIO_Port GPIOB
+#define IMU_nCS_Pin GPIO_PIN_15
+#define IMU_nCS_GPIO_Port GPIOB
+#define PTH_nCS_Pin GPIO_PIN_8
+#define PTH_nCS_GPIO_Port GPIOA
+#define RPI_nCS_Pin GPIO_PIN_11
+#define RPI_nCS_GPIO_Port GPIOA
+#define LED_READY_Pin GPIO_PIN_5
 #define LED_READY_GPIO_Port GPIOB
+#define DEBUG_TRIGGER_Pin GPIO_PIN_3
+#define DEBUG_TRIGGER_GPIO_Port GPIOH
+#define SW_ACTIVE_Pin GPIO_PIN_8
+#define SW_ACTIVE_GPIO_Port GPIOB
+#define SW_ACTIVE_EXTI_IRQn EXTI8_IRQn
 
 /* USER CODE BEGIN Private defines */
 

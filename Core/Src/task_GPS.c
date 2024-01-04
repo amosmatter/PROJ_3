@@ -16,7 +16,6 @@ enum en_gps_events
     ev_data_available = BIT(0)
 };
 
-extern RTC_HandleTypeDef hrtc;
 
 #define MAX_GPS_CMD_LEN 128
 #define CMD_RETRIES 10
@@ -64,10 +63,6 @@ size_t get_line_len(char *str)
 void rcv_gps_uart_irq_handler(void)
 {
     osEventFlagsSet(GPS_events, ev_data_available);
-}
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    printf("UART RX complete\n");
 }
 
 HAL_StatusTypeDef gps_transmit_recieve(const char *cmd, char *buffer, uint16_t length, uint32_t timeout)
@@ -411,7 +406,7 @@ void GPS_task(void *pvParameters)
     if (confirm_comm() < 0)
     {
         DEBUG_PRINT("failed to establish connection on 9600, trying 57100\n");
-        set_uart_baud(115200);
+        set_uart_baud(57100);
         if (confirm_comm() < 0)
         {
             DEBUG_PRINT("failed to establish connection on 57100, trying 115200\n");
