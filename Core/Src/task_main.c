@@ -71,20 +71,46 @@ osEventFlagsId_t init_events;
 osEventFlagsId_t timing_events;
 osEventFlagsId_t general_events;
 
-void buttonpressed(void)
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
-    osEventFlagsSet(general_events, ev_button_pressed);
-    NVIC_SystemReset();
+    if (GPIO_Pin == PS_nFLT_Pin)
+    {
+        osEventFlagsSet(general_events, ev_power_ok);
+        osEventFlagsClear(general_events, ev_fault_detected);
+            printf("Power ok%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
+
+    }
+}
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == PS_nFLT_Pin)
+    {
+        osEventFlagsSet(general_events, ev_fault_detected);
+        osEventFlagsClear(general_events, ev_power_ok);
+            printf("Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
+            HAL_NVIC_SystemReset();//TODO remove
+
+    }
+    else if (GPIO_Pin == SW_ACTIVE_Pin)
+    {
+        osEventFlagsSet(general_events, ev_button_pressed);
+    }
 }
 
 void main_task(void *pvParameters)
 {
+    general_events = osEventFlagsNew(NULL);
+    if (HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin) == GPIO_PIN_SET)
+    {
+        osEventFlagsSet(general_events, ev_power_ok);
+    }
+    osEventFlagsWait(general_events, ev_power_ok, osFlagsNoClear, osWaitForever);
+
     init_time();
     SPI_Lock = osMutexNew(NULL);
 
     init_events = osEventFlagsNew(NULL);
     timing_events = osEventFlagsNew(NULL);
-    general_events = osEventFlagsNew(NULL);
 
     csv_queue_handle = osMessageQueueNew(CSV_DUMP_DATA_QUEUE_SIZE, CSV_DUMP_DATA_SIZE, NULL);
     rpi_tx_queue_handle = osMessageQueueNew(RPI_TX_DATA_QUEUE_SIZE, RPI_TX_DATA_SIZE, NULL);
@@ -93,8 +119,8 @@ void main_task(void *pvParameters)
     airsp_data_queue_handle = osMessageQueueNew(AIRSPEED_DATA_QUEUE_SIZE, AIRSPEED_DATA_SIZE, NULL);
     gps_data_queue_handle = osMessageQueueNew(GPS_DATA_QUEUE_SIZE, GPS_DATA_SIZE, NULL);
 
-    // PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
-    // proc_TaskHandle = osThreadNew(processing_task, NULL, &proc_TaskAttributes);
+    PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
+    proc_TaskHandle = osThreadNew(processing_task, NULL, &proc_TaskAttributes);
     // IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
     // AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
     // GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);

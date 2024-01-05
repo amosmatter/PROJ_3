@@ -63,10 +63,11 @@ void Error_Handler(void);
 #define I2C hi2c1
 #define SPI hspi1
 #define CONSOLE_UART huart3
-#define I_MON_Pin GPIO_PIN_14
-#define I_MON_GPIO_Port GPIOC
-#define PS_FLT_N_Pin GPIO_PIN_15
-#define PS_FLT_N_GPIO_Port GPIOC
+#define PS_I_MON_Pin GPIO_PIN_14
+#define PS_I_MON_GPIO_Port GPIOC
+#define PS_nFLT_Pin GPIO_PIN_15
+#define PS_nFLT_GPIO_Port GPIOC
+#define PS_nFLT_EXTI_IRQn EXTI15_IRQn
 #define PPS_Pin GPIO_PIN_0
 #define PPS_GPIO_Port GPIOA
 #define SD_nCS_Pin GPIO_PIN_1

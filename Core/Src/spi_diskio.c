@@ -34,9 +34,6 @@
 #define _USE_WRITE 1
 #define _USE_IOCTL 1
 
-// Make sure you set #define SPI as some hspix in main.h
-// Make sure you set #define SD_nCS_GPIO_Port as some GPIO port in main.h
-// Make sure you set #define SD_nCS_Pin as some GPIO pin in main.h
 extern SPI_HandleTypeDef SPI;
 
 /* Function prototypes */
@@ -138,7 +135,8 @@ static BYTE xchg_spi(
 )
 {
 	BYTE rxDat;
-	HAL_SPI_TransmitReceive(&SPI, &dat, &rxDat, 1, 50);
+	HAL_StatusTypeDef ret =  HAL_SPI_TransmitReceive(&SPI, &dat, &rxDat, 1, 50);
+
 	return rxDat;
 }
 

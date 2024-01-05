@@ -54,7 +54,7 @@ void processing_task(void *pvParameters)
 	osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 10000); // TODO gracefully handle timeout
 	osMessageQueuePut(csv_queue_handle, &csv_data, 0, 10000);
 
-	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 10000);
+	//osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 10000); //TODO reimplement
 	printf("all inited \n");
 
 	uint32_t lastcalc = osKernelGetTickCount();

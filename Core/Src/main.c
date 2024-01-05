@@ -558,17 +558,17 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : I_MON_Pin */
-  GPIO_InitStruct.Pin = I_MON_Pin;
+  /*Configure GPIO pin : PS_I_MON_Pin */
+  GPIO_InitStruct.Pin = PS_I_MON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(I_MON_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(PS_I_MON_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PS_FLT_N_Pin */
-  GPIO_InitStruct.Pin = PS_FLT_N_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(PS_FLT_N_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : PS_nFLT_Pin */
+  GPIO_InitStruct.Pin = PS_nFLT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(PS_nFLT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PPS_Pin */
   GPIO_InitStruct.Pin = PPS_Pin;
@@ -606,6 +606,9 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI8_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI8_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

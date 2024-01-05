@@ -161,7 +161,7 @@ void PTH_task(void *pvParameters)
 
     while (1)
     {
-        osEventFlagsWait(timing_events, ev_rcv_pth, osFlagsWaitAll, osWaitForever);
+        osEventFlagsWait(timing_events, ev_rcv_pth, osFlagsWaitAll, 100);
         rslt = get_pth_data(period, &dev, &comp);
         if (rslt != BME280_OK)
         {
@@ -170,6 +170,9 @@ void PTH_task(void *pvParameters)
         }
         else
         {
+            printf("Temperature : %.3f C\r\n", comp.temperature );
+            printf("Pressure : %.3f hPa\r\n", comp.pressure );
+            printf("Humidity : %.3f %%\r\n", comp.humidity );
             osMessageQueuePut(pth_data_queue_handle, &comp, 0, 0);
         }
     }

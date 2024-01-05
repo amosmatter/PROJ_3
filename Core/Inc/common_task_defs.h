@@ -60,6 +60,8 @@ extern osEventFlagsId_t timing_events;
 enum e_general_events
 {
   ev_button_pressed = BIT(0),
+  ev_fault_detected = BIT(1),
+  ev_power_ok = BIT(2),
 };
 
 extern osEventFlagsId_t general_events;
