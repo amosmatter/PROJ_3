@@ -94,6 +94,8 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
     else if (GPIO_Pin == SW_ACTIVE_Pin)
     {
         osEventFlagsSet(general_events, ev_button_pressed);
+                    HAL_NVIC_SystemReset();//TODO remove
+
     }
 }
 
@@ -119,13 +121,14 @@ void main_task(void *pvParameters)
     airsp_data_queue_handle = osMessageQueueNew(AIRSPEED_DATA_QUEUE_SIZE, AIRSPEED_DATA_SIZE, NULL);
     gps_data_queue_handle = osMessageQueueNew(GPS_DATA_QUEUE_SIZE, GPS_DATA_SIZE, NULL);
 
-    PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
-    proc_TaskHandle = osThreadNew(processing_task, NULL, &proc_TaskAttributes);
-    // IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
-    // AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
-    // GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
+    //PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
+    //proc_TaskHandle = osThreadNew(processing_task, NULL, &proc_TaskAttributes);
+    //IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
+    GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
     // rpi_comm_TaskHandle = osThreadNew(comm_rpi_task, NULL, &SD_TaskAttributes);
-    SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
+    // AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
+
+    //SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
 
     for (;;)
     {

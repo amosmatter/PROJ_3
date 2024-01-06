@@ -42,7 +42,7 @@ void SD_task(void *pvParameters)
     FIL file;
 
     // imu and pth share the spi bus so allow them to go first
-   // osEventFlagsWait(init_events, ev_init_imu | ev_init_pth, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
+    osEventFlagsWait(init_events, ev_init_imu | ev_init_pth, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
     uint32_t ctr = 0;
 
     while (1)

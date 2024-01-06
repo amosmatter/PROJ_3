@@ -470,7 +470,7 @@ static void MX_USART2_UART_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_UARTEx_DisableFifoMode(&huart2) != HAL_OK)
+  if (HAL_UARTEx_EnableFifoMode(&huart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -547,13 +547,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SD_nCS_Pin|IMU_FSYNC_Pin|IMU_nCS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SD_nCS_Pin|IMU_nCS_Pin|LED_READY_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, PTH_nCS_Pin|RPI_nCS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(IMU_FSYNC_GPIO_Port, IMU_FSYNC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, PTH_nCS_Pin|RPI_nCS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_RESET);

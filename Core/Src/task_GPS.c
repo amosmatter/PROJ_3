@@ -11,14 +11,25 @@
 #include <stdarg.h>
 #include "system_time.h"
 
+enum command_results
+{
+    UNKNOWN_CMD_ERROR = -1,
+    INVALID_COMMAND = 0,
+    UNSUPPORTED_COMMAND = 1,
+    VALID_COMMAND_ACTION_FAIL = 2,
+    VALID_COMMAND_ACTION_SUCCEEDED = 3,
+};
+
 enum en_gps_events
 {
     ev_data_available = BIT(0)
 };
 
-
+#define GPS_UPDATE_RATE 1
 #define MAX_GPS_CMD_LEN 128
 #define CMD_RETRIES 10
+#define ACK_RETRIES 2
+#define ACK_TIMEOUT 100
 
 #define KNOTS_TO_MS 0.51444444444
 osEventFlagsId_t GPS_events;
@@ -60,48 +71,52 @@ size_t get_line_len(char *str)
     return i;
 }
 
+#define SECTION_LEN 1024
+#define N_SECTIONS 3
+
+osMessageQueueId_t rcv_queue;
+
+void process_uart_package(void)
+{
+    DEBUG_PRINT("Processing GPS!\n");
+    static uint8_t first_time_flag = 1;
+    static uint8_t sections[N_SECTIONS][SECTION_LEN];
+    static uint8_t ctr = 0;
+
+    uint8_t *sectionptr = sections[ctr];
+
+    if (!first_time_flag)
+    {
+        osStatus_t ret = osMessageQueuePut(rcv_queue, &sectionptr, 0, 0);
+        if (ret != osOK)
+        {
+            DEBUG_PRINT("GPS Recieve Overrun detected!");
+        }
+        ctr = (ctr >= N_SECTIONS - 1) ? 0 : ctr + 1;
+    }
+    first_time_flag = 0;
+
+    HAL_StatusTypeDef ret = HAL_UARTEx_ReceiveToIdle_DMA(&GPS_UART, sections[ctr], SECTION_LEN);
+    if (ret != HAL_OK)
+    {
+        HAL_UART_Abort(&GPS_UART);
+        HAL_UARTEx_ReceiveToIdle_DMA(&GPS_UART, sections[ctr], SECTION_LEN);
+    }
+}
+
+void gps_rcv (UART_HandleTypeDef * huart)
+{
+	printf("rcv\n");
+}
+
 void rcv_gps_uart_irq_handler(void)
 {
-    osEventFlagsSet(GPS_events, ev_data_available);
-}
+      uint32_t isrflags   = READ_REG(GPS_UART.Instance->ISR);
 
-HAL_StatusTypeDef gps_transmit_recieve(const char *cmd, char *buffer, uint16_t length, uint32_t timeout)
-{
-    HAL_StatusTypeDef ret = HAL_OK;
-    if (buffer != NULL)
+    if (isrflags & USART_ISR_IDLE)
     {
-        osEventFlagsClear(GPS_events, ev_data_available);
-        ret |= HAL_UARTEx_ReceiveToIdle_DMA(&GPS_UART, (uint8_t *)buffer, length);
+    	process_uart_package();
     }
-    if (cmd != NULL && ret == HAL_OK)
-    {
-        ret |= HAL_UART_Transmit(&GPS_UART, cmd, strlen(cmd), timeout);
-    }
-    if (buffer != NULL)
-    {
-        uint32_t eventret = osEventFlagsWait(GPS_events, ev_data_available, NULL, timeout);
-        if (*(int32_t *)&eventret < 0)
-        {
-            buffer[0] = '\0';
-            ret = HAL_TIMEOUT;
-        }
-        else
-        {
-            // buffer[length - GPS_UART.RxXferCount] = '\0';
-        }
-    }
-    HAL_UART_AbortReceive(&GPS_UART);
-    return ret;
-}
-
-HAL_StatusTypeDef gps_recieve(char *buffer, uint16_t length, uint32_t timeout)
-{
-    return gps_transmit_recieve(NULL, buffer, length, timeout);
-}
-
-HAL_StatusTypeDef gps_send(const char *cmd, uint32_t timeout)
-{
-    return gps_transmit_recieve(cmd, NULL, 0, timeout);
 }
 
 int vgps_build_cmd(char *buffer, size_t maxlen, uint32_t cmd, const char *fmt, va_list args)
@@ -257,7 +272,7 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
             time.tm_mday = sentence.date.day;
             uint32_t ms = sentence.time.microseconds / 1000;
             set_time(&time, &ms);
-            
+
             dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
             dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
             dat->ground_speed = KNOTS_TO_MS * sentence.speed.value / (double)sentence.speed.scale;
@@ -285,11 +300,40 @@ int gps_find_and_parse_NMEA(char *rcv, gps_data_t *dat)
         j++;
     }
 }
+int gps_gps_send_cmd(uint32_t cmd, char *line, uint32_t timeout)
+{
+    char *rcv;
 
+    HAL_StatusTypeDef hal_st = HAL_UART_Transmit(&GPS_UART, (uint8_t *)line, strlen(line), timeout);
+    if (hal_st != HAL_OK)
+    {
+        DEBUG_PRINT("Failed to send: %s %d\n", line, hal_st);
+        return -1;
+    }
+    DEBUG_PRINT("---------------Sent: %s\n", line);
+
+    int ret = -1;
+    for (int i = 0; i < ACK_RETRIES; i++)
+    {
+        osStatus_t status = osMessageQueueGet(rcv_queue, &rcv, 0, ACK_TIMEOUT);
+        DEBUG_PRINT("Answer: \n%s\n------------\n", rcv)
+
+        if (status == osErrorTimeout)
+        {
+            break;
+        }
+
+        ret = gps_find_and_parse_ack(cmd, rcv);
+        if (ret != -1)
+        {
+            break;
+        }
+    }
+    return ret;
+}
 int gps_send_cmd(uint32_t cmd, uint32_t timeout, const char *fmt, ...)
 {
     int ret = 0;
-    char rcv[2048] = {};
     char line[MAX_GPS_CMD_LEN];
 
     va_list args;
@@ -306,40 +350,15 @@ int gps_send_cmd(uint32_t cmd, uint32_t timeout, const char *fmt, ...)
     ret = -1;
     for (int i = 0; i < CMD_RETRIES; i++)
     {
-
-        DEBUG_PRINT("---------------Sent: %s", line);
-
-        if (gps_transmit_recieve(line, rcv, sizeof(rcv), timeout) == HAL_OK)
+        ret = gps_gps_send_cmd(cmd, line, timeout);
+        if (ret == VALID_COMMAND_ACTION_SUCCEEDED || ret == UNSUPPORTED_COMMAND)
         {
-            DEBUG_PRINT("Answer: \n%s------------\n", rcv)
-
-            int status;
-            while (1)
-            {
-                status = gps_find_and_parse_ack(cmd, rcv);
-                if (status != -1)
-                {
-                    break;
-                }
-                if (gps_recieve(rcv, sizeof(rcv), timeout) != HAL_OK)
-                {
-                    break;
-                }
-                DEBUG_PRINT("Answer secondary: \n%s------------\n", rcv)
-            }
-
-            if (status == 3)
-            {
-                ret = 0;
-                break;
-            }
-            if (status >= 0)
-            {
-                printf("GPS command ack: %d\n", status);
-            }
+            break;
         }
-
-        osDelay(20);
+        if (ret == VALID_COMMAND_ACTION_FAIL)
+        {
+            osDelay(100);
+        }
     }
     return ret;
 }
@@ -351,11 +370,13 @@ int gps_set_mode(uint32_t mode, uint32_t timeout)
 
 int confirm_comm()
 {
-    return gps_send_cmd(0, 300, NULL);
+    return (gps_send_cmd(0, 1000, NULL) == 3) ? 1 : 0;
 }
 
 int set_uart_baud(uint32_t baudrate)
 {
+	HAL_UART_Abort(&GPS_UART);
+
     GPS_UART.Init.BaudRate = baudrate;
     HAL_StatusTypeDef ret = HAL_UART_Init(&GPS_UART);
     if (ret != HAL_OK)
@@ -363,6 +384,8 @@ int set_uart_baud(uint32_t baudrate)
         printf("GPS Uart change failed\n");
         return -1;
     }
+    process_uart_package();
+
     return 0;
 }
 
@@ -378,12 +401,9 @@ int gps_set_message_interval_scaler(uint32_t gll_int, uint32_t rmc_int, uint32_t
 
 int gps_set_baudrate(uint32_t baudrate)
 {
-    uint32_t baud_b4 = GPS_UART.Init.BaudRate;
-
     char line[MAX_GPS_CMD_LEN];
     gps_build_cmd(line, sizeof(line), 251, "%u", baudrate);
-    gps_send(line, 100);
-
+    HAL_UART_Transmit(&GPS_UART, (uint8_t *)line, strlen(line), 100);
     set_uart_baud(baudrate);
 
     return confirm_comm();
@@ -391,46 +411,40 @@ int gps_set_baudrate(uint32_t baudrate)
 
 void GPS_task(void *pvParameters)
 {
-    char inbuf[2048] = {0};
-    char outbuf[MAX_GPS_CMD_LEN] = {0};
 
-    gps_data_t gps_data = {0};
-    gps_data_t disc;
-
-    GPS_events = osEventFlagsNew(NULL);
-
-    HAL_StatusTypeDef ret = HAL_OK;
-
+    rcv_queue = osMessageQueueNew(N_SECTIONS, sizeof(void *), NULL);
+    GPS_UART.RxISR = gps_rcv;
     DEBUG_PRINT("---------------------------------------------------------------\nGPS task started\n");
     set_uart_baud(9600);
-    if (confirm_comm() < 0)
+    if (!confirm_comm())
     {
-        DEBUG_PRINT("failed to establish connection on 9600, trying 57100\n");
-        set_uart_baud(57100);
-        if (confirm_comm() < 0)
+        DEBUG_PRINT("failed to establish connection on 9600, trying 115200\n");
+        set_uart_baud(57600);
+        if (!confirm_comm())
         {
-            DEBUG_PRINT("failed to establish connection on 57100, trying 115200\n");
-            set_uart_baud(115200);
-            if (confirm_comm() < 0)
-            {
-                DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
-                return;
-            }
+            DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
+
+            HAL_NVIC_SystemReset();
         }
     }
 
     // gps_set_mode(4, 900);
+    int ret = gps_set_baudrate(19200);
 
-    if (gps_set_baudrate(9600) < 0) // TODO: set to 115200 if possible
+        if (!ret)
     {
-        DEBUG_PRINT("failed baud change\n");
+        DEBUG_PRINT("failed baud change, restarting \n");
+        HAL_NVIC_SystemReset();
     }
 
-    if (gps_set_base_interval(1000 / OUTPUT_RATE) < 0)
+    ret = gps_set_base_interval(1000 / GPS_UPDATE_RATE );
+    if (ret != VALID_COMMAND_ACTION_SUCCEEDED)
     {
-        DEBUG_PRINT("failed interval change\n");
+        DEBUG_PRINT("failed base interval change %d, restarting\n", ret);
+        HAL_NVIC_SystemReset();
     }
-    if (gps_set_message_interval_scaler(1, 1, 1, 1, 1, 1) < 0)
+
+    if (gps_set_message_interval_scaler(0, 1, 0, 1, 0, 0) != VALID_COMMAND_ACTION_SUCCEEDED)
     {
         DEBUG_PRINT("failed individual message interval change\n");
     }
@@ -448,13 +462,25 @@ void GPS_task(void *pvParameters)
     //   {
     //       DEBUG_PRINT("failed interval change\n");
     //   }
-    // gps_set_mode(0, 1000); // GPS doesn't seem to confirm the first attempt so has to fail
+
     osEventFlagsSet(init_events, ev_init_gps);
+
+    gps_data_t gps_data = {0};
+
     while (1)
     {
-        gps_recieve(inbuf, sizeof(inbuf), 1100);
-        DEBUG_PRINT("GPS:\n%s\n", inbuf);
-        gps_find_and_parse_NMEA(inbuf, &gps_data);
+        uint8_t *buf;
+        osStatus_t osstat = osMessageQueueGet(rcv_queue, &buf, 0, (1000 / GPS_UPDATE_RATE ) * 1.1);
+        if (osstat != osOK)
+        {
+            DEBUG_PRINT("Something went wrong with GPS Reception...\n");
+            process_uart_package();
+            osMessageQueueReset(rcv_queue);
+            continue;
+        }
+
+        DEBUG_PRINT("GPS:\n%s\n", buf);
+        gps_find_and_parse_NMEA(buf, &gps_data);
         osMessageQueuePut(gps_data_queue_handle, &gps_data, 0, 0);
     }
 }
