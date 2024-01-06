@@ -113,7 +113,7 @@ void Error_Handler(void);
 
 #define BIT(n) (1UL << (n))
 
-#define OUTPUT_RATE 5
+#define OUTPUT_RATE 1
 
 /* USER CODE END Private defines */
 

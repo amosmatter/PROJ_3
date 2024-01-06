@@ -51,11 +51,7 @@ void processing_task(void *pvParameters)
 
 	csv_dump_data_t csv_data = {0};
 
-	osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 10000); // TODO gracefully handle timeout
-	osMessageQueuePut(csv_queue_handle, &csv_data, 0, 10000);
-
-	//osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 10000); //TODO reimplement
-	printf("all inited \n");
+	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
 	uint32_t lastcalc = osKernelGetTickCount();
 	uint32_t time_ms = 0;
@@ -69,10 +65,12 @@ void processing_task(void *pvParameters)
 	uint32_t ctr = 0;
 	while (1)
 	{
+
 		osEventFlagsSet(timing_events, ev_rcv_pth | ev_rcv_imu);
 		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 1000 / OUTPUT_RATE / 2);
 		osMessageQueueGet(imu_data_queue_handle, &imu_data, 0, 0);
-		was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2); // TODO: could go into sleep here
+
+		was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2);
 		if (was_delayed == pdFALSE)
 		{
 			printf("Measurements took too long \n");
@@ -113,7 +111,7 @@ void processing_task(void *pvParameters)
 			printf("ctr %d \n", ctr++);
 			osMessageQueuePut(rpi_tx_queue_handle, &rpi_data, 0, QUEUE_WAIT_TIME);
 
-				csv_data.time_ms =  (ctr >= 100) ? (uint32_t)-1 : time_ms;// TODO remove
+				csv_data.time_ms =  0 ? (uint32_t)-1 : time_ms;// TODO remove
 				csv_data.hum = pth_data.humidity;
 				csv_data.v_ground = ground_speed;
 				csv_data.v_air = air_speed;

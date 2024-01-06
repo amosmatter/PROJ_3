@@ -171,11 +171,11 @@ void IMU_task(void *pvParameters)
 	ICM_20948_reset_FIFO(&myICM);
 	osEventFlagsSet(init_events, ev_init_imu);
 
+	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
+
 	while (1)
 	{
-
 		osEventFlagsWait(timing_events, ev_rcv_imu, NULL, osWaitForever);
-
 		icm_20948_DMP_data_t fifo_buf;
 
 		ICM_20948_Status_e status = ICM_20948_Stat_FIFOMoreDataAvail;

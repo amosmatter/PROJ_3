@@ -75,6 +75,7 @@ void SD_task(void *pvParameters)
     DEBUG_PRINT("Folder name: %s\n", folderName);
     DEBUG_PRINT("File name: %s\n", fileName);
 
+
     while (1)
     {
         FRESULT res = f_mkdir("logs");
@@ -147,6 +148,7 @@ void SD_task(void *pvParameters)
     ctr = 0;
     f_lseek(&file, 0);
 
+
     while (1)
     {
         int ret = f_printf(&file, "%s\n", HEADER);
@@ -164,6 +166,7 @@ void SD_task(void *pvParameters)
     }
 
     osEventFlagsSet(init_events, ev_init_csv);
+	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
     while (1)
     {

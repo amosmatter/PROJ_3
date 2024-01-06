@@ -82,10 +82,10 @@ void airspeed_task(void *pvParameters)
     while (1)
     {
         osEventFlagsWait(timing_events, ev_rcv_airsp, osFlagsWaitAll, osWaitForever);
+        get_data(&raw_data);                         // request measurement
 
         while (1)
         {
-            get_data(&raw_data);                         // request measurement
             HAL_StatusTypeDef ret = get_data(&raw_data); // get measurement
             if (ret != HAL_OK)
             {

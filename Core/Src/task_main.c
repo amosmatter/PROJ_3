@@ -121,20 +121,19 @@ void main_task(void *pvParameters)
     airsp_data_queue_handle = osMessageQueueNew(AIRSPEED_DATA_QUEUE_SIZE, AIRSPEED_DATA_SIZE, NULL);
     gps_data_queue_handle = osMessageQueueNew(GPS_DATA_QUEUE_SIZE, GPS_DATA_SIZE, NULL);
 
-    //PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
-    //proc_TaskHandle = osThreadNew(processing_task, NULL, &proc_TaskAttributes);
-    //IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
+    PTH_TaskHandle = osThreadNew(PTH_task, NULL, &PTH_TaskAttributes);
+    proc_TaskHandle = osThreadNew(processing_task, NULL, &proc_TaskAttributes);
+    IMU_TaskHandle = osThreadNew(IMU_task, NULL, &IMU_TaskAttributes);
     GPS_TaskHandle = osThreadNew(GPS_task, NULL, &GPS_TaskAttributes);
-    // rpi_comm_TaskHandle = osThreadNew(comm_rpi_task, NULL, &SD_TaskAttributes);
-    // AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
+    rpi_comm_TaskHandle = osThreadNew(comm_rpi_task, NULL, &SD_TaskAttributes);
+    AS_TaskHandle = osThreadNew(airspeed_task, NULL, &AS_TaskAttributes);
 
-    //SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
+    SD_TaskHandle = osThreadNew(SD_task, NULL, &SD_TaskAttributes);
 
     for (;;)
     {
         osDelay(1000);
         HAL_GPIO_TogglePin(LED_READY_GPIO_Port, LED_READY_Pin);
-        printf("Hello world\r\n");
 
         if (!(BIT(31) & osEventFlagsWait(general_events, ev_button_pressed, osFlagsWaitAny, 0)))
         {

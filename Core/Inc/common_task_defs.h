@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include "minmea-master/minmea.h"
 
+#define GPS_UPDATE_RATE 1
+
 extern osThreadId_t PTH_TaskHandle;
 extern osThreadId_t IMU_TaskHandle;
 extern osThreadId_t GPS_TaskHandle;

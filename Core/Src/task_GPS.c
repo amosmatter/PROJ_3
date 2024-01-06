@@ -24,8 +24,9 @@ enum en_gps_events
 {
     ev_data_available = BIT(0)
 };
+#define SECTION_LEN 1024
+#define N_SECTIONS 5
 
-#define GPS_UPDATE_RATE 1
 #define MAX_GPS_CMD_LEN 128
 #define CMD_RETRIES 10
 #define ACK_RETRIES 2
@@ -71,14 +72,12 @@ size_t get_line_len(char *str)
     return i;
 }
 
-#define SECTION_LEN 1024
-#define N_SECTIONS 3
+
 
 osMessageQueueId_t rcv_queue;
 
 void process_uart_package(void)
 {
-    DEBUG_PRINT("Processing GPS!\n");
     static uint8_t first_time_flag = 1;
     static uint8_t sections[N_SECTIONS][SECTION_LEN];
     static uint8_t ctr = 0;
@@ -90,7 +89,7 @@ void process_uart_package(void)
         osStatus_t ret = osMessageQueuePut(rcv_queue, &sectionptr, 0, 0);
         if (ret != osOK)
         {
-            DEBUG_PRINT("GPS Recieve Overrun detected!");
+            DEBUG_PRINT("GPS Recieve Overrun detected!\n");
         }
         ctr = (ctr >= N_SECTIONS - 1) ? 0 : ctr + 1;
     }
@@ -104,15 +103,10 @@ void process_uart_package(void)
     }
 }
 
-void gps_rcv (UART_HandleTypeDef * huart)
-{
-	printf("rcv\n");
-}
 
 void rcv_gps_uart_irq_handler(void)
 {
       uint32_t isrflags   = READ_REG(GPS_UART.Instance->ISR);
-
     if (isrflags & USART_ISR_IDLE)
     {
     	process_uart_package();
@@ -257,8 +251,6 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
     {
         struct minmea_sentence_rmc sentence;
         bool ret = minmea_parse_rmc(&sentence, rcv);
-        printf("parsing RMC: %d\n", ret);
-
         if (ret)
         {
 
@@ -310,14 +302,11 @@ int gps_gps_send_cmd(uint32_t cmd, char *line, uint32_t timeout)
         DEBUG_PRINT("Failed to send: %s %d\n", line, hal_st);
         return -1;
     }
-    DEBUG_PRINT("---------------Sent: %s\n", line);
 
     int ret = -1;
     for (int i = 0; i < ACK_RETRIES; i++)
     {
         osStatus_t status = osMessageQueueGet(rcv_queue, &rcv, 0, ACK_TIMEOUT);
-        DEBUG_PRINT("Answer: \n%s\n------------\n", rcv)
-
         if (status == osErrorTimeout)
         {
             break;
@@ -413,13 +402,11 @@ void GPS_task(void *pvParameters)
 {
 
     rcv_queue = osMessageQueueNew(N_SECTIONS, sizeof(void *), NULL);
-    GPS_UART.RxISR = gps_rcv;
-    DEBUG_PRINT("---------------------------------------------------------------\nGPS task started\n");
-    set_uart_baud(9600);
+    set_uart_baud(19200);
     if (!confirm_comm())
     {
-        DEBUG_PRINT("failed to establish connection on 9600, trying 115200\n");
-        set_uart_baud(57600);
+        DEBUG_PRINT("failed to establish GPS connection on 9600, trying 115200\n");
+        set_uart_baud(9600);
         if (!confirm_comm())
         {
             DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
@@ -433,20 +420,20 @@ void GPS_task(void *pvParameters)
 
         if (!ret)
     {
-        DEBUG_PRINT("failed baud change, restarting \n");
+        DEBUG_PRINT(" GPS  failed baud change, restarting \n");
         HAL_NVIC_SystemReset();
     }
 
     ret = gps_set_base_interval(1000 / GPS_UPDATE_RATE );
     if (ret != VALID_COMMAND_ACTION_SUCCEEDED)
     {
-        DEBUG_PRINT("failed base interval change %d, restarting\n", ret);
+        DEBUG_PRINT(" GPS failed base interval change %d, restarting\n", ret);
         HAL_NVIC_SystemReset();
     }
 
     if (gps_set_message_interval_scaler(0, 1, 0, 1, 0, 0) != VALID_COMMAND_ACTION_SUCCEEDED)
     {
-        DEBUG_PRINT("failed individual message interval change\n");
+        DEBUG_PRINT(" GPS failed individual message interval change\n");
     }
 
     //   if (gps_send_cmd(250, 100, "%u", 115200) < 0) // set dgps baud
@@ -473,13 +460,12 @@ void GPS_task(void *pvParameters)
         osStatus_t osstat = osMessageQueueGet(rcv_queue, &buf, 0, (1000 / GPS_UPDATE_RATE ) * 1.1);
         if (osstat != osOK)
         {
-            DEBUG_PRINT("Something went wrong with GPS Reception...\n");
+            DEBUG_PRINT(" GPS Something went wrong with Communication...\n");
             process_uart_package();
             osMessageQueueReset(rcv_queue);
             continue;
         }
 
-        DEBUG_PRINT("GPS:\n%s\n", buf);
         gps_find_and_parse_NMEA(buf, &gps_data);
         osMessageQueuePut(gps_data_queue_handle, &gps_data, 0, 0);
     }

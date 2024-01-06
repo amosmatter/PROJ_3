@@ -43,6 +43,8 @@ void bme280_delay_us(uint32_t period, void *intf_ptr)
  */
 void bme280_error_codes_print_result(const char api_name[], int8_t rslt)
 {
+#ifdef DEBUG
+
     if (rslt != BME280_OK)
     {
         printf("%s\t", api_name);
@@ -75,25 +77,21 @@ void bme280_error_codes_print_result(const char api_name[], int8_t rslt)
             break;
         }
     }
+#endif
 }
 
-void init_bme280(struct bme280_dev *dev, SPI_HandleTypeDef *hspi)
-{
-}
-
-static int8_t get_pth_data(uint32_t period, struct bme280_dev *dev, struct bme280_data *comp_data)
+static int8_t get_pth_data(struct bme280_dev *dev, struct bme280_data *comp_data)
 {
     int8_t rslt = BME280_E_NULL_PTR;
     uint8_t status_reg;
-
     while (1)
     {
+
         rslt = bme280_get_regs(BME280_REG_STATUS, &status_reg, 1, dev);
         bme280_error_codes_print_result("bme280_get_regs", rslt);
 
         if (status_reg & BME280_STATUS_MEAS_DONE)
         {
-            // delay_ms(period / 1000 + 5);
             /* Read compensated data */
             rslt = bme280_get_sensor_data(BME280_HUM | BME280_PRESS | BME280_TEMP, comp_data, dev);
 
@@ -106,7 +104,6 @@ static int8_t get_pth_data(uint32_t period, struct bme280_dev *dev, struct bme28
 
 void PTH_task(void *pvParameters)
 {
-	printf("Entered \n");
     int8_t rslt;
     uint32_t period;
     struct bme280_dev dev;
@@ -139,7 +136,6 @@ void PTH_task(void *pvParameters)
     rslt = bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS, &settings, &dev);
     bme280_error_codes_print_result("bme280_set_sensor_settings", rslt);
 
-    /* Always set the power mode after setting the configuration */
     rslt = bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
     bme280_error_codes_print_result("bme280_set_power_mode", rslt);
 
@@ -158,21 +154,18 @@ void PTH_task(void *pvParameters)
     }
 
     osEventFlagsSet(init_events, ev_init_pth);
+	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
     while (1)
     {
-        osEventFlagsWait(timing_events, ev_rcv_pth, osFlagsWaitAll, 100);
-        rslt = get_pth_data(period, &dev, &comp);
+        osEventFlagsWait(timing_events, ev_rcv_pth, osFlagsWaitAll, osWaitForever);
+        rslt = get_pth_data(&dev, &comp);
         if (rslt != BME280_OK)
         {
             bme280_error_codes_print_result("get_pth_data", rslt);
-            osDelay(1);
         }
         else
         {
-            printf("Temperature : %.3f C\r\n", comp.temperature );
-            printf("Pressure : %.3f hPa\r\n", comp.pressure );
-            printf("Humidity : %.3f %%\r\n", comp.humidity );
             osMessageQueuePut(pth_data_queue_handle, &comp, 0, 0);
         }
     }
