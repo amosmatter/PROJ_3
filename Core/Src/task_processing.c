@@ -13,6 +13,9 @@
 
 #define QUEUE_WAIT_TIME (1000 / OUTPUT_RATE)
 
+#define OUTPUT_PERIOD (1000 / OUTPUT_RATE)
+#define SENSOR_OVERHEAD (60)
+
 double get_energy(double velocity, double height)
 {
 	const double g = 9.81;
@@ -48,6 +51,7 @@ void processing_task(void *pvParameters)
 	imu_data_t imu_data = {0};
 	gps_data_t gps_data = {0};
 	rpi_tx_data_t rpi_data = {0};
+	airspeed_data_t airspeed_data = {0};
 
 	csv_dump_data_t csv_data = {0};
 
@@ -61,78 +65,71 @@ void processing_task(void *pvParameters)
 	double init_altitude = 0.0;
 
 	TickType_t ticks = osKernelGetTickCount();
+	double d_time = 1000.0 / OUTPUT_RATE;
 
 	uint32_t ctr = 0;
+
+	uint32_t initialized = 0;
+
 	while (1)
 	{
+		osEventFlagsSet(timing_events, ev_rcv_all);
 
-		osEventFlagsSet(timing_events, ev_rcv_pth | ev_rcv_imu);
-		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 1000 / OUTPUT_RATE / 2);
+		osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, SENSOR_OVERHEAD); // while waiting here, the sensors should be sending data
+		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 0);
 		osMessageQueueGet(imu_data_queue_handle, &imu_data, 0, 0);
+		osMessageQueueGet(airsp_data_queue_handle, &airspeed_data, 0, 0);
 
-		was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2);
-		if (was_delayed == pdFALSE)
+
+
+		if (!initialized)
 		{
-			printf("Measurements took too long \n");
+			last_altitude = gps_data.altitude;
+			init_altitude = gps_data.altitude;
 		}
-		struct tm time = {};
-		get_time(&time, &time_ms);
-
-		printf("Time: %02d:%02d:%02d:%03d \n", time.tm_hour, time.tm_min, time.tm_sec, time_ms % 1000);
-		printf("Date: %02d-%02d-%02d \n", time.tm_mday, time.tm_mon + 1, time.tm_year +1900);
-		if (last_time_ms == 0)
-		{
-			last_time_ms = time_ms;
-			osDelay(5);
-			continue;
-		}
-
-		double d_time = (time_ms - last_time_ms) / 1000.0;
 		double d_altitude = gps_data.altitude - last_altitude;
 		double ground_speed = get_ground_speed(gps_data.ground_speed, d_altitude, d_time);
-		double air_speed = get_air_speed(pth_data.temperature, pth_data.pressure, 50);
+		double air_speed = get_air_speed(airspeed_data.temp, pth_data.pressure, airspeed_data.d_pressure);
 		double energy = get_energy(ground_speed, gps_data.altitude - init_altitude);
-		double d_energy = energy - last_energy;
-		if (last_time_ms != 0)
+
+		if (!initialized)
 		{
-
-			rpi_data.hum = pth_data.humidity;
-			rpi_data.v_ground = ground_speed;
-			rpi_data.v_air = air_speed;
-			rpi_data.temp = pth_data.temperature;
-			rpi_data.press = pth_data.pressure;
-			rpi_data.longt = gps_data.longitude;
-			rpi_data.lat = gps_data.latitude;
-			rpi_data.energy = d_energy;
-			rpi_data.yaw = imu_data.yaw;
-			rpi_data.pitch = imu_data.pitch;
-			rpi_data.roll = imu_data.roll;
-
-			printf("ctr %d \n", ctr++);
-			osMessageQueuePut(rpi_tx_queue_handle, &rpi_data, 0, QUEUE_WAIT_TIME);
-
-				csv_data.time_ms =  0 ? (uint32_t)-1 : time_ms;// TODO remove
-				csv_data.hum = pth_data.humidity;
-				csv_data.v_ground = ground_speed;
-				csv_data.v_air = air_speed;
-				csv_data.temp = pth_data.temperature;
-				csv_data.press = pth_data.pressure;
-				csv_data.longt = gps_data.longitude;
-				csv_data.lat = gps_data.latitude;
-				csv_data.energy = d_energy;
-				csv_data.yaw = imu_data.yaw;
-				csv_data.pitch = imu_data.pitch;
-				csv_data.roll = imu_data.roll;
-
-				osMessageQueuePut(csv_queue_handle, &csv_data, 0, 0);
 			last_energy = energy;
-			last_altitude = gps_data.altitude;
-			last_time_ms = time_ms;
-
-			was_delayed = xTaskDelayUntil(&ticks, 1000 / OUTPUT_RATE / 2);
-			if (was_delayed == pdFALSE)
-			{
-				printf("Processing task had to wait too long \n");
-			}
+			initialized = 1;
 		}
-	}}
+
+		double d_energy = energy - last_energy;
+
+		rpi_data.hum = pth_data.humidity;
+		rpi_data.v_ground = ground_speed;
+		rpi_data.v_air = air_speed;
+		rpi_data.temp = pth_data.temperature;
+		rpi_data.press = pth_data.pressure;
+		rpi_data.longt = gps_data.longitude;
+		rpi_data.lat = gps_data.latitude;
+		rpi_data.energy = d_energy;
+		rpi_data.yaw = imu_data.yaw;
+		rpi_data.pitch = imu_data.pitch;
+		rpi_data.roll = imu_data.roll;
+		osMessageQueuePut(rpi_tx_queue_handle, &rpi_data, 0, 0);
+
+		csv_data.hum = pth_data.humidity;
+		csv_data.v_ground = ground_speed;
+		csv_data.v_air = air_speed;
+		csv_data.temp = pth_data.temperature;
+		csv_data.press = pth_data.pressure;
+		csv_data.longt = gps_data.longitude;
+		csv_data.lat = gps_data.latitude;
+		csv_data.energy = d_energy;
+		csv_data.yaw = imu_data.yaw;
+		csv_data.pitch = imu_data.pitch;
+		csv_data.roll = imu_data.roll;
+		osMessageQueuePut(csv_queue_handle, &csv_data, 0, 0);
+
+		last_energy = energy;
+		last_altitude = gps_data.altitude;
+
+		osDelay(OUTPUT_PERIOD - SENSOR_OVERHEAD);
+
+	}
+}

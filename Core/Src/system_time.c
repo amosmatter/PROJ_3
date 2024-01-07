@@ -3,6 +3,8 @@
 #include "time.h"
 
 osMessageQueueId_t time_q;
+
+
 typedef struct
 {
     time_t time_s;
@@ -17,7 +19,7 @@ void init_time()
 
 int isSwissDaylightSaving(int month, int day, int weekday)
 {
-    return (month > 3 && month < 10 ||                       //
+    return (month > 3 && month < 10 ||
             (month == 3 && ((31 - day) < (7 - weekday))) ||  // has the last sunday of  march  passed?
             (month == 10 && ((31 - day) >= (7 - weekday)))); // has the last sunday of  october not  passed?
 }
@@ -38,13 +40,18 @@ void set_time(struct tm *utc_time, uint32_t *ms)
     osMessageQueuePut(time_q, &sys_time, 0, 0);
 }
 
-void get_time(struct tm *localtime, uint32_t *ms)
+sys_time_t get_sys_time()
 {
     sys_time_t sys_time;
 
     osMessageQueueGet(time_q, &sys_time, 0, osWaitForever);
     osMessageQueuePut(time_q, &sys_time, 0, 0); // TODO: this is a hack, switch to freertos version
+    return sys_time;
+}
 
+void get_time(struct tm *localtime, uint32_t *ms)
+{
+    sys_time_t sys_time = get_sys_time();
     uint32_t d_ticks = get_sys_ms() - sys_time.ticks;
 
     sys_time.ms += d_ticks;
@@ -56,3 +63,27 @@ void get_time(struct tm *localtime, uint32_t *ms)
 
     localtime_r(&sys_time.time_s, localtime);
 }
+
+osStatus_t delay_ms(uint32_t ms)
+{
+	osDelay(ms);
+}
+
+
+// This function waits for 1/fcpu * ( N * 4 + 8 )
+// Overhead: 4 cylcles for call with bl, 3 cycles
+//           for return with bx, 1 cycle bne
+// Loop: 1 cycle sub, 3 cylces bne
+__attribute__((naked))
+void delay_cycles(uint32_t val)
+{
+	asm(
+			".syntax unified\n"
+			"delay_loop:\n"
+			"subs r0,#1\n"  	// 1 cycle
+			"bne delay_loop\n" 	// 3 cycles when branch else 1
+			"bx lr\n"           // 3 cylces
+	);
+}
+
+

@@ -20,6 +20,8 @@
 #define T_SCALE ((1 << 11) - 1)
 #define T_OFFS (0)
 
+#define AIRSPEED_N_RETRIES 5
+
 typedef struct
 {
     uint16_t bridge;
@@ -84,17 +86,17 @@ void airspeed_task(void *pvParameters)
         osEventFlagsWait(timing_events, ev_rcv_airsp, osFlagsWaitAll, osWaitForever);
         get_data(&raw_data);                         // request measurement
 
-        while (1)
+        for (int i = 0; i < AIRSPEED_N_RETRIES; i++)
         {
             HAL_StatusTypeDef ret = get_data(&raw_data); // get measurement
             if (ret != HAL_OK)
             {
-                DEBUG_PRINT("Comm error! \n");
+                DEBUG_PRINT("AIRSPEED Comm error! \n");
                 continue;
             }
             else if (raw_data.flags & 3 == 2)
             {
-                DEBUG_PRINT("Stale Data! \n");
+                DEBUG_PRINT("AIRSPEED Stale Data! \n");
                 continue;
             }
             else if (raw_data.flags & 3 == 3)

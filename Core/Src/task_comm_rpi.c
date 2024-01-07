@@ -7,7 +7,7 @@
 
 #include "common_task_defs.h"
 #include "task_comm_rpi.h"
-#include "delay.h"
+#include "system_time.h"
 #include "spi_common.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -11,22 +11,29 @@
 #include "system_time.h"
 
 #define HEADER "Time [s]; Humidity [percent]; Groundspeed [m/s]; Airspeed [m/s]; Temperature [deg C]; Airpressure [kPa]; Longitude; Latitude; Flight Height [m]; Roll [deg]; Pitch [deg]; Yaw [deg]; Energy [m];Energieableitung[m/s];"
-#define DBL_FORMATTING "%.4+e;\t"
+#define DBL_FORMATTING "%.4e;\t"
 
 #define RETRIES 99
 #define RETRY_PERIOD 20
 
-int write_dbl(FIL *buffer, double val)
-{
-    return f_printf(buffer, DBL_FORMATTING, val);
-}
+osMutexId_t closingMutex;
+
 int write_str(FIL *buffer, const char *val)
 {
+    DEBUG_PRINT( "%s", val);
     return f_printf(buffer, "%s", val);
 }
+int write_dbl(FIL *buffer, double val)
+{   
+    char buf [16];
+    snprintf(buf,16, DBL_FORMATTING, val);
+    return write_str(buffer,buf);
+}
+
 
 void write_line(FIL *buffer, csv_dump_data_t *data)
 {
+    DEBUG_PRINT("Writing CSV line:\t");
     write_dbl(buffer, data->pitch / M_PI * 180);
     write_dbl(buffer, data->roll / M_PI * 180);
     write_dbl(buffer, data->yaw / M_PI * 180);
@@ -34,8 +41,28 @@ void write_line(FIL *buffer, csv_dump_data_t *data)
     write_str(buffer, "\r\n");
 }
 
+const osThreadAttr_t SD_Closing_TaskAttributes = {
+    .name = "SD_Closing_Task",
+    .priority = (osPriority_t)osPriorityHigh,
+    .stack_size = 1024
+};
+
+void closing_task(void *pvParameters)
+{
+    FIL* file = (FIL*) pvParameters;
+    osEventFlagsWait(general_events, ev_fault_detected, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
+	osMutexAcquire(closingMutex, osWaitForever);
+    f_close(file);
+    f_unmount("");
+    DEBUG_PRINT("Closed SD File!");
+    HAL_NVIC_SystemReset();
+}
+
+
+
 void SD_task(void *pvParameters)
 {
+
     csv_dump_data_t data_in;
 
     FATFS fs;
@@ -144,6 +171,10 @@ void SD_task(void *pvParameters)
     osDelay(RETRY_PERIOD);
     }
 
+	closingMutex = 	osMutexNew(NULL);
+	osMutexAcquire(closingMutex, 0);
+	osThreadNew(closing_task, &file, &SD_Closing_TaskAttributes);
+
     DEBUG_PRINT("File opened: %s\n", fileName);
     ctr = 0;
     f_lseek(&file, 0);
@@ -168,17 +199,20 @@ void SD_task(void *pvParameters)
     osEventFlagsSet(init_events, ev_init_csv);
 	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
+
+ctr = 0;
     while (1)
     {
+    	osMutexRelease(closingMutex);
+    	if (ctr ++ == 5)
+    	{
+    		//break;
+    	}
         osMessageQueueGet(csv_queue_handle, &data_in, 0, osWaitForever);
-        if (data_in.time_ms == -1)
-        {
-            break;
-        }
+    	osMutexAcquire(closingMutex, osWaitForever);
         write_line(&file, &data_in);
     }
-    printf("Closing file\n");
-    // Close the file
     f_close(&file);
+    printf("closed\n");
     osDelay(-1);
 }

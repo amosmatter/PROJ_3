@@ -77,7 +77,7 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
     {
         osEventFlagsSet(general_events, ev_power_ok);
         osEventFlagsClear(general_events, ev_fault_detected);
-            printf("Power ok%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
+        DEBUG_PRINT("Power ok%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
 
     }
 }
@@ -87,8 +87,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
     {
         osEventFlagsSet(general_events, ev_fault_detected);
         osEventFlagsClear(general_events, ev_power_ok);
-            printf("Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
-            HAL_NVIC_SystemReset();//TODO remove
+            DEBUG_PRINT("Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
 
     }
     else if (GPIO_Pin == SW_ACTIVE_Pin)

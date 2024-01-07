@@ -9,7 +9,7 @@
 #include "cmsis_os2.h"
 #include <string.h>
 
-#include "delay.h"
+#include "system_time.h"
 
 HAL_StatusTypeDef SPI_read_burst_implicit(SPI_HandleTypeDef *hspi, uint8_t reg_addr, uint8_t *data, size_t len, GPIO_TypeDef *CS_GPIOx, uint16_t CS_GPIO_Pin)
 {

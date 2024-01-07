@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "core_cm33.h"
 #include "task_GPS.h"
+#include "system_time.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

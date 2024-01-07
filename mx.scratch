@@ -14,7 +14,14 @@
       <ProjectName>PROJ_3</ProjectName>
       <ProjectNature>C</ProjectNature>
       <Secure />
-      <filestoremove />
+      <filestoremove>
+        <file>
+          <name>Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_lptim.c</name>
+        </file>
+        <file>
+          <name>..\Src\custom.c</name>
+        </file>
+      </filestoremove>
       <sourceEntriesToRemove>
         <sourceEntry />
       </sourceEntriesToRemove>

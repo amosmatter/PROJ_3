@@ -51,10 +51,8 @@ enum e_timing_events
 {
   ev_rcv_imu = BIT(0),
   ev_rcv_pth = BIT(1),
-  ev_rcv_gps = BIT(2),
-  ev_rcv_airsp = BIT(3),
-  ev_rcv_all = ev_rcv_imu | ev_rcv_pth | ev_rcv_gps | ev_rcv_airsp
-
+  ev_rcv_airsp = BIT(2),
+  ev_rcv_all = ev_rcv_imu | ev_rcv_pth |  ev_rcv_airsp
 };
 
 extern osEventFlagsId_t timing_events;
