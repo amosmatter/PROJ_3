@@ -9,12 +9,15 @@
 #include <stdarg.h>
 #include "math.h"
 #include "system_time.h"
+#include <time.h>
 
 #define HEADER "Time [s]; Humidity [percent]; Groundspeed [m/s]; Airspeed [m/s]; Temperature [deg C]; Airpressure [kPa]; Longitude; Latitude; Flight Height [m]; Roll [deg]; Pitch [deg]; Yaw [deg]; Energy [m];Energieableitung[m/s];"
-#define DBL_FORMATTING "%+.4+e;\t"
 
 #define RETRIES 99
 #define RETRY_PERIOD 20
+
+
+
 
 int write_str(FIL *buffer, const char *val)
 {
@@ -23,18 +26,49 @@ int write_str(FIL *buffer, const char *val)
 }
 int write_dbl(FIL *buffer, double val)
 {   
-    char buf [16];
-    snprintf(buf,16, DBL_FORMATTING, val);
+    char buf [32];
+    snprintf(buf,32, "%+.8+e;\t", val);
     return write_str(buffer,buf);
+}
+int write_timestamp(FIL *buffer, struct tm *time, uint32_t ms) // Write UTC integer timestamp 
+{
+    char buf [32];
+    time_t s = mktime(time);
+    int offs = get_swiss_tz_offset(time->tm_mon, time->tm_mday, time->tm_wday);
+    if (offs > s)
+    {
+        s = 0;
+    }
+    else
+    {
+        s -= offs;
+    }
+    snprintf(buf,32, "%lld.%lu;\t", s, ms);
+    return write_str(buffer, buf);
 }
 
 
 void write_line(FIL *buffer, csv_dump_data_t *data)
 {
     DEBUG_PRINT("Writing CSV line:\t");
+
+    struct tm t; 
+    uint32_t ms;
+    get_time(&t, &ms);
+    write_timestamp(buffer, &t, ms);
+    write_dbl(buffer, data->hum);
+    write_dbl(buffer, data->v_ground);
+    write_dbl(buffer, data->v_air);
+    write_dbl(buffer, data->temp);
+    write_dbl(buffer, data->press);
+    write_dbl(buffer, data->longt);
+    write_dbl(buffer, data->lat);
+    write_dbl(buffer, data->alt_rel_start);    
     write_dbl(buffer, data->pitch / M_PI * 180);
     write_dbl(buffer, data->roll / M_PI * 180);
     write_dbl(buffer, data->yaw / M_PI * 180);
+    write_dbl(buffer, data->energy);
+    write_dbl(buffer, 0.0);
 
     write_str(buffer, "\r\n");
 }
@@ -199,18 +233,14 @@ void SD_task(void *pvParameters)
 	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
 
-ctr = 0;
     while (1)
     {
-    	if (ctr ++ == 5)
-    	{
-    		//break;
-    	}
         osMessageQueueGet(csv_queue_handle, &data_in, 0, osWaitForever);
         osMutexAcquire(SPI_Task_Mutex,osWaitForever);
         write_line(&file, &data_in);
         osMutexRelease(SPI_Task_Mutex);
     }
+
     osMutexAcquire(SPI_Task_Mutex,osWaitForever);
     f_close(&file);
     osMutexRelease(SPI_Task_Mutex);

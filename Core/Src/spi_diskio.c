@@ -202,7 +202,7 @@ static void despiselect(void)
 
 	 osThreadId_t id = 	osMutexGetOwner(SPI_Lock);
 	 osThreadId_t thisid =osThreadGetId();
-	 if(id == thisid)
+	 if(id == thisid) // This Program sometimes tries to free the SPI bus even if it wasn't claimed
 	 {
 		osMutexRelease(SPI_Lock);
 	 }

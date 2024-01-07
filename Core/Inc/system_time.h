@@ -7,6 +7,7 @@
 void init_time();
 void set_time(struct tm *utc_time, uint32_t *ms);
 void get_time(struct tm *localtime, uint32_t *ms);
+time_t get_swiss_tz_offset(int month, int day, int weekday);
 
 
 #ifndef FCPU

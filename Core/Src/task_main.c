@@ -91,7 +91,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
         osThreadSuspend(GPS_TaskHandle);
         osThreadSuspend(AS_TaskHandle);
         osThreadSuspend(proc_TaskHandle);
-        //DEBUG_PRINT("Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
+         DEBUG_PRINT("Power Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
     }
     else if (GPIO_Pin == SW_ACTIVE_Pin)
     {
@@ -110,8 +110,8 @@ void main_task(void *pvParameters)
     osEventFlagsWait(general_events, ev_power_ok, osFlagsNoClear, osWaitForever);
 
     init_time();
-    SPI_Lock = osMutexNew(NULL);
-    SPI_Task_Mutex = osMutexNew(NULL);
+    SPI_Lock = osMutexNew(NULL);       // Mutex for SPI bus because it's shared
+    SPI_Task_Mutex = osMutexNew(NULL); // Mutex for SPI Tasks because *some* don't behave properly when only locking the bus itself
 
     init_events = osEventFlagsNew(NULL);
     timing_events = osEventFlagsNew(NULL);
@@ -137,23 +137,18 @@ void main_task(void *pvParameters)
         uint32_t ret = osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 1000);
         HAL_GPIO_TogglePin(LED_READY_GPIO_Port, LED_READY_Pin);
 
-        if (  0 >=* (int32_t * ) &ret)
+        if (0 >= *(int32_t *)&ret)
         {
-        	break;
+            break;
         }
-
     }
 
-
-    for(;;)
+    for (;;)
     {
 
-    	HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, 0);
-    	osDelay(1995);
-    	HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, 1);
-    	osDelay(5);
+        HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, 0);
+        osDelay(1995);
+        HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, 1);
+        osDelay(5);
     }
-
-
-
 }

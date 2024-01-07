@@ -128,18 +128,18 @@ typedef struct
 typedef struct
 {
   uint32_t time_ms;
-  double hum;      // humidity in 0.002 %
-  double v_ground; // ground speed in 0.005 m/s
-  double v_air;    // air speed in 0.01 m/s
-  double temp;     // temperature in 0.005 C
-  double press;    // pressure  in 5 Pa
+  double hum;      
+  double v_ground; 
+  double v_air;    
+  double temp;     
+  double press;    
   double longt;
   double lat;
-  double alt_rel_start; // altitude relative to start of flight in 0.125 m
-  double roll;          // roll in 0.0002 rad
-  double pitch;         // pitch in 0.0002 rad
-  double yaw;           // yaw in 0.0002 rad
-  double energy;        // energy in 0.25 m
+  double alt_rel_start; 
+  double roll;          
+  double pitch;         
+  double yaw;           
+  double energy;        
 } csv_dump_data_t;
 
 
