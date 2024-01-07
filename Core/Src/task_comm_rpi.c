@@ -64,6 +64,11 @@ void comm_rpi_task(void *pvParameters)
             .yaw = rpi_in_data.yaw / 0.0002,
             .energy = rpi_in_data.energy / 0.25};
         continue;
+        osMutexAcquire(SPI_Task_Mutex, osWaitForever);
+        osMutexAcquire(SPI_Lock, osWaitForever);
         SPI_write_bytes(&SPI, &rpi_out_data, sizeof(rpi_out_data), RPI_nCS_GPIO_Port, RPI_nCS_Pin);
+        osMutexRelease(SPI_Lock);
+        osMutexRelease(SPI_Task_Mutex);
+
     }
 }

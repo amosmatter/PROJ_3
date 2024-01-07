@@ -116,6 +116,8 @@ void PTH_task(void *pvParameters)
     dev.intf_ptr = &SPI;
     dev.delay_us = bme280_delay_us;
 
+	osMutexAcquire(SPI_Task_Mutex,osWaitForever);
+
     rslt = bme280_init(&dev);
     bme280_error_codes_print_result("bme280_init", rslt);
 
@@ -154,12 +156,18 @@ void PTH_task(void *pvParameters)
     }
 
     osEventFlagsSet(init_events, ev_init_pth);
+    osMutexRelease(SPI_Task_Mutex);
+
 	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
     while (1)
     {
         osEventFlagsWait(timing_events, ev_rcv_pth, osFlagsWaitAll, osWaitForever);
+        
+        osMutexAcquire(SPI_Task_Mutex,osWaitForever);
         rslt = get_pth_data(&dev, &comp);
+        osMutexRelease(SPI_Task_Mutex);
+
         if (rslt != BME280_OK)
         {
             bme280_error_codes_print_result("get_pth_data", rslt);

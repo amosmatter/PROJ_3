@@ -131,6 +131,8 @@ void IMU_task(void *pvParameters)
 		&SPI,		   // this pointer is passed into your functions when they are called.
 	};
 
+	osMutexAcquire(SPI_Task_Mutex,osWaitForever);
+
 	while (1)
 	{
 		ICM_20948_Status_e ret = ICM_20948_startup_default(&myICM, &mySerif, 0);
@@ -170,6 +172,7 @@ void IMU_task(void *pvParameters)
 	ICM_20948_reset_DMP(&myICM);
 	ICM_20948_reset_FIFO(&myICM);
 	osEventFlagsSet(init_events, ev_init_imu);
+	osMutexRelease(SPI_Task_Mutex);
 
 	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
@@ -179,10 +182,14 @@ void IMU_task(void *pvParameters)
 		icm_20948_DMP_data_t fifo_buf;
 
 		ICM_20948_Status_e status = ICM_20948_Stat_FIFOMoreDataAvail;
+		
+		osMutexAcquire(SPI_Task_Mutex,osWaitForever);
 		while (status != ICM_20948_Stat_Ok)
 		{
 			status = inv_icm20948_read_dmp_data(&myICM, &fifo_buf);
-		}
+		}	
+		osMutexRelease(SPI_Task_Mutex);
+
 
 		if ((status == ICM_20948_Stat_Ok) && (fifo_buf.header & DMP_header_bitmap_Quat9) > 0) // Was valid data available?
 		{

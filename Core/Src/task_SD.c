@@ -11,12 +11,10 @@
 #include "system_time.h"
 
 #define HEADER "Time [s]; Humidity [percent]; Groundspeed [m/s]; Airspeed [m/s]; Temperature [deg C]; Airpressure [kPa]; Longitude; Latitude; Flight Height [m]; Roll [deg]; Pitch [deg]; Yaw [deg]; Energy [m];Energieableitung[m/s];"
-#define DBL_FORMATTING "%.4e;\t"
+#define DBL_FORMATTING "%+.4+e;\t"
 
 #define RETRIES 99
 #define RETRY_PERIOD 20
-
-osMutexId_t closingMutex;
 
 int write_str(FIL *buffer, const char *val)
 {
@@ -50,11 +48,12 @@ const osThreadAttr_t SD_Closing_TaskAttributes = {
 void closing_task(void *pvParameters)
 {
     FIL* file = (FIL*) pvParameters;
-    osEventFlagsWait(general_events, ev_fault_detected, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
-	osMutexAcquire(closingMutex, osWaitForever);
+
+    osEventFlagsWait(general_events, ev_fault_detected,  osFlagsNoClear | osFlagsWaitAll, osWaitForever);
+    osMutexAcquire(SPI_Task_Mutex,osWaitForever);
     f_close(file);
     f_unmount("");
-    DEBUG_PRINT("Closed SD File!");
+    DEBUG_PRINT("Closed SD File!\n");
     HAL_NVIC_SystemReset();
 }
 
@@ -69,7 +68,7 @@ void SD_task(void *pvParameters)
     FIL file;
 
     // imu and pth share the spi bus so allow them to go first
-    osEventFlagsWait(init_events, ev_init_imu | ev_init_pth, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
+	osMutexAcquire(SPI_Task_Mutex,osWaitForever);
     uint32_t ctr = 0;
 
     while (1)
@@ -171,8 +170,6 @@ void SD_task(void *pvParameters)
     osDelay(RETRY_PERIOD);
     }
 
-	closingMutex = 	osMutexNew(NULL);
-	osMutexAcquire(closingMutex, 0);
 	osThreadNew(closing_task, &file, &SD_Closing_TaskAttributes);
 
     DEBUG_PRINT("File opened: %s\n", fileName);
@@ -197,22 +194,27 @@ void SD_task(void *pvParameters)
     }
 
     osEventFlagsSet(init_events, ev_init_csv);
+    osMutexRelease(SPI_Task_Mutex);
+
 	osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
 
 
 ctr = 0;
     while (1)
     {
-    	osMutexRelease(closingMutex);
     	if (ctr ++ == 5)
     	{
     		//break;
     	}
         osMessageQueueGet(csv_queue_handle, &data_in, 0, osWaitForever);
-    	osMutexAcquire(closingMutex, osWaitForever);
+        osMutexAcquire(SPI_Task_Mutex,osWaitForever);
         write_line(&file, &data_in);
+        osMutexRelease(SPI_Task_Mutex);
     }
+    osMutexAcquire(SPI_Task_Mutex,osWaitForever);
     f_close(&file);
+    osMutexRelease(SPI_Task_Mutex);
+
     printf("closed\n");
     osDelay(-1);
 }

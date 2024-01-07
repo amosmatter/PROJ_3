@@ -66,6 +66,7 @@ osMessageQueueId_t csv_queue_handle;
 osMessageQueueId_t rpi_tx_queue_handle;
 
 osMutexId_t SPI_Lock;
+osMutexId_t SPI_Task_Mutex;
 
 osEventFlagsId_t init_events;
 osEventFlagsId_t timing_events;
@@ -78,7 +79,6 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
         osEventFlagsSet(general_events, ev_power_ok);
         osEventFlagsClear(general_events, ev_fault_detected);
         DEBUG_PRINT("Power ok%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
-
     }
 }
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
@@ -87,14 +87,16 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
     {
         osEventFlagsSet(general_events, ev_fault_detected);
         osEventFlagsClear(general_events, ev_power_ok);
-            DEBUG_PRINT("Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
 
+        osThreadSuspend(GPS_TaskHandle);
+        osThreadSuspend(AS_TaskHandle);
+        osThreadSuspend(proc_TaskHandle);
+        //DEBUG_PRINT("Fault detected%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
     }
     else if (GPIO_Pin == SW_ACTIVE_Pin)
     {
         osEventFlagsSet(general_events, ev_button_pressed);
-                    HAL_NVIC_SystemReset();//TODO remove
-
+        HAL_NVIC_SystemReset(); // TODO remove
     }
 }
 
@@ -109,6 +111,7 @@ void main_task(void *pvParameters)
 
     init_time();
     SPI_Lock = osMutexNew(NULL);
+    SPI_Task_Mutex = osMutexNew(NULL);
 
     init_events = osEventFlagsNew(NULL);
     timing_events = osEventFlagsNew(NULL);
@@ -131,12 +134,26 @@ void main_task(void *pvParameters)
 
     for (;;)
     {
-        osDelay(1000);
+        uint32_t ret = osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 1000);
         HAL_GPIO_TogglePin(LED_READY_GPIO_Port, LED_READY_Pin);
 
-        if (!(BIT(31) & osEventFlagsWait(general_events, ev_button_pressed, osFlagsWaitAny, 0)))
+        if (  0 >=* (int32_t * ) &ret)
         {
-            printf("Button pressed\r\n");
+        	break;
         }
+
     }
+
+
+    for(;;)
+    {
+
+    	HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, 0);
+    	osDelay(1995);
+    	HAL_GPIO_WritePin(LED_READY_GPIO_Port, LED_READY_Pin, 1);
+    	osDelay(5);
+    }
+
+
+
 }

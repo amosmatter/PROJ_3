@@ -118,7 +118,7 @@ DWORD get_fattime(void)
 	get_time(&timeinfo, NULL);
 	DWORD fattime = 0;
 	fattime |= ((DWORD)timeinfo.tm_year - 80) << 25;
-	fattime |= (DWORD)timeinfo.tm_mon << 21;
+	fattime |= ((DWORD)timeinfo.tm_mon + 1)<< 21;
 	fattime |= (DWORD)timeinfo.tm_mday << 16;
 	fattime |= (DWORD)timeinfo.tm_hour << 11;
 	fattime |= (DWORD)timeinfo.tm_min << 5;
@@ -199,7 +199,17 @@ static void despiselect(void)
 	CS_HIGH();		/* Set CS# high */
 	SPI.Instance->CFG2 &= ~SPI_CFG2_AFCNTR;
 	xchg_spi(0xFF); /* Dummy clock (force DO hi-z for multiple slave SPI) */
-	osMutexRelease(SPI_Lock);
+
+	 osThreadId_t id = 	osMutexGetOwner(SPI_Lock);
+	 osThreadId_t thisid =osThreadGetId();
+	 if(id == thisid)
+	 {
+		osMutexRelease(SPI_Lock);
+	 }
+	 else if(id)
+	 {
+		DEBUG_PRINT("diskio tried to release SPI mutex owned by %s!\n",osThreadGetName(id));
+	 }
 }
 
 /*-----------------------------------------------------------------------*/
@@ -209,6 +219,7 @@ static void despiselect(void)
 static int spiselect(void) /* 1:OK, 0:Timeout */
 {
 	osMutexAcquire(SPI_Lock,osWaitForever);
+
 	SPI.Instance->CFG2 |= SPI_CFG2_AFCNTR; // Lock Clock and MOSI in between data transfers
 
 	CS_LOW();		/* Set CS# low */

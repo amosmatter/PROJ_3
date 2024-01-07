@@ -31,6 +31,7 @@ extern osMessageQueueId_t rpi_tx_queue_handle;
 extern osMessageQueueId_t csv_queue_handle;
 
 extern osMutexId_t SPI_Lock;
+extern osMutexId_t SPI_Task_Mutex;
 
 enum e_init_events
 {
