@@ -11,8 +11,6 @@
 #include "main.h"
 #include "system_time.h"
 
-#define QUEUE_WAIT_TIME (1000 / OUTPUT_RATE)
-
 #define OUTPUT_PERIOD (1000 / OUTPUT_RATE)
 #define SENSOR_OVERHEAD (60)
 
@@ -70,10 +68,18 @@ void processing_task(void *pvParameters)
 	uint32_t ctr = 0;
 
 	uint32_t initialized = 0;
-
+	osMessageQueueReset(gps_data_queue_handle);
 	while (1)
 	{
 		osEventFlagsSet(timing_events, ev_rcv_all);
+
+		uint32_t premature = osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, 0);
+
+		if (*(int32_t * ) &premature >= 0)
+		{
+			DEBUG_PRINT("The GPS sent while processing task was waiting; Increase Sensor Overhead!\n");
+		}
+
 
 		osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, SENSOR_OVERHEAD); // while waiting here, the sensors should be sending data
 		osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 0);

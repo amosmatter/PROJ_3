@@ -77,7 +77,6 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
     if (GPIO_Pin == PS_nFLT_Pin)
     {
         osEventFlagsSet(general_events, ev_power_ok);
-        osEventFlagsClear(general_events, ev_fault_detected);
         DEBUG_PRINT("Power ok%d\n", HAL_GPIO_ReadPin(PS_nFLT_GPIO_Port, PS_nFLT_Pin));
     }
 }
@@ -85,7 +84,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == PS_nFLT_Pin)
     {
-        osEventFlagsSet(general_events, ev_fault_detected);
+        osEventFlagsSet(general_events, ev_request_restart);
         osEventFlagsClear(general_events, ev_power_ok);
 
         osThreadSuspend(GPS_TaskHandle);
@@ -96,7 +95,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
     else if (GPIO_Pin == SW_ACTIVE_Pin)
     {
         osEventFlagsSet(general_events, ev_button_pressed);
-        HAL_NVIC_SystemReset(); // TODO remove
+        osEventFlagsSet(general_events, ev_request_restart);
     }
 }
 
@@ -111,7 +110,7 @@ void main_task(void *pvParameters)
 
     init_time();
     SPI_Lock = osMutexNew(NULL);       // Mutex for SPI bus because it's shared
-    SPI_Task_Mutex = osMutexNew(NULL); // Mutex for SPI Tasks because *some* don't behave properly when only locking the bus itself
+    SPI_Task_Mutex = osMutexNew(NULL); // Mutex for SPI Tasks because *some* don't behave properly when just locking the bus itself
 
     init_events = osEventFlagsNew(NULL);
     timing_events = osEventFlagsNew(NULL);

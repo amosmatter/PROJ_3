@@ -136,11 +136,6 @@ void HardFault_Handler(void)
     print_binary_section(SCB->AFSR, 0, 31);
     printf("\n\r");
   }
-  // binary_printf("BFAR = 0x%b\r\n", SCB->BFAR);
-  // binary_printf("CFSR = 0x%b\r\n", SCB->CFSR);
-  // printf("HFSR:);
-  // binary_printf("DFSR = 0x%b\r\n", SCB->DFSR);
-  // binary_printf("AFSR = 0x%b\r\n", SCB->AFSR);
 
   /* USER CODE END HardFault_IRQn 0 */
   while (1)

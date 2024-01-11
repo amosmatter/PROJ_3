@@ -424,7 +424,7 @@ void GPS_task(void *pvParameters)
         HAL_NVIC_SystemReset();
     }
 
-    ret = gps_set_base_interval(1000 / GPS_UPDATE_RATE );
+    ret = gps_set_base_interval(1000 / OUTPUT_RATE ); // This is the slowest signal so the whole system will sync to this intervall
     if (ret != VALID_COMMAND_ACTION_SUCCEEDED)
     {
         DEBUG_PRINT(" GPS failed base interval change %d, restarting\n", ret);
@@ -457,7 +457,7 @@ void GPS_task(void *pvParameters)
     while (1)
     {
         uint8_t *buf;
-        osStatus_t osstat = osMessageQueueGet(rcv_queue, &buf, 0, (1000 / GPS_UPDATE_RATE ) * 1.1);
+        osStatus_t osstat = osMessageQueueGet(rcv_queue, &buf, 0, (1000 / OUTPUT_RATE ) * 1.1);
         if (osstat != osOK)
         {
             DEBUG_PRINT(" GPS Something went wrong with Communication...\n");

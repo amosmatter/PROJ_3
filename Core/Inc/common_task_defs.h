@@ -12,7 +12,8 @@
 #include <stdint.h>
 #include "minmea-master/minmea.h"
 
-#define GPS_UPDATE_RATE 1
+#define BIT(n) (1UL << (n))
+#define OUTPUT_RATE 10
 
 extern osThreadId_t PTH_TaskHandle;
 extern osThreadId_t IMU_TaskHandle;
@@ -61,7 +62,7 @@ extern osEventFlagsId_t timing_events;
 enum e_general_events
 {
   ev_button_pressed = BIT(0),
-  ev_fault_detected = BIT(1),
+  ev_request_restart = BIT(1),
   ev_power_ok = BIT(2),
 };
 
