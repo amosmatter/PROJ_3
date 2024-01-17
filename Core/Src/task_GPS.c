@@ -1,5 +1,3 @@
-
-
 #include "minmea-master/minmea.h"
 #include "cmsis_os2.h"
 #include "main.h"
@@ -72,8 +70,6 @@ size_t get_line_len(char *str)
     return i;
 }
 
-
-
 osMessageQueueId_t rcv_queue;
 
 void process_uart_package(void)
@@ -103,13 +99,12 @@ void process_uart_package(void)
     }
 }
 
-
 void rcv_gps_uart_irq_handler(void)
 {
-      uint32_t isrflags   = READ_REG(GPS_UART.Instance->ISR);
+    uint32_t isrflags = READ_REG(GPS_UART.Instance->ISR);
     if (isrflags & USART_ISR_IDLE)
     {
-    	process_uart_package();
+        process_uart_package();
     }
 }
 
@@ -244,6 +239,7 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
         if (ret)
         {
             dat->altitude = sentence.altitude.value / (double)sentence.altitude.scale;
+            dat->fix_quality = sentence.fix_quality;
         }
         break;
     }
@@ -265,8 +261,8 @@ int parse_NMEA(char *rcv, gps_data_t *dat)
             uint32_t ms = sentence.time.microseconds / 1000;
             set_time(&time, &ms);
 
-            dat->latitude = sentence.latitude.value / (double)sentence.latitude.scale;
-            dat->longitude = sentence.longitude.value / (double)sentence.longitude.scale;
+            dat->latitude = minmea_tocoord(&sentence.latitude);
+            dat->longitude = minmea_tocoord(&sentence.longitude);
             dat->ground_speed = KNOTS_TO_MS * sentence.speed.value / (double)sentence.speed.scale;
         }
         break;
@@ -364,7 +360,7 @@ int confirm_comm()
 
 int set_uart_baud(uint32_t baudrate)
 {
-	HAL_UART_Abort(&GPS_UART);
+    HAL_UART_Abort(&GPS_UART);
 
     GPS_UART.Init.BaudRate = baudrate;
     HAL_StatusTypeDef ret = HAL_UART_Init(&GPS_UART);
@@ -405,11 +401,11 @@ void GPS_task(void *pvParameters)
     set_uart_baud(19200);
     if (!confirm_comm())
     {
-        DEBUG_PRINT("failed to establish GPS connection on 9600, trying 115200\n");
+        DEBUG_PRINT("failed to establish GPS connection on 19200, trying 9600\n");
         set_uart_baud(9600);
         if (!confirm_comm())
         {
-            DEBUG_PRINT("failed to establish connection with GPS on 115200, returning\n");
+            DEBUG_PRINT("failed to establish connection with GPS on 9600, restarting!\n");
 
             HAL_NVIC_SystemReset();
         }
@@ -418,13 +414,13 @@ void GPS_task(void *pvParameters)
     // gps_set_mode(4, 900);
     int ret = gps_set_baudrate(19200);
 
-        if (!ret)
+    if (!ret)
     {
         DEBUG_PRINT(" GPS  failed baud change, restarting \n");
         HAL_NVIC_SystemReset();
     }
 
-    ret = gps_set_base_interval(1000 / OUTPUT_RATE ); // This is the slowest signal so the whole system will sync to this intervall
+    ret = gps_set_base_interval(1000 / OUTPUT_RATE); // This is the slowest signal so the whole system will sync to this intervall
     if (ret != VALID_COMMAND_ACTION_SUCCEEDED)
     {
         DEBUG_PRINT(" GPS failed base interval change %d, restarting\n", ret);
@@ -457,7 +453,7 @@ void GPS_task(void *pvParameters)
     while (1)
     {
         uint8_t *buf;
-        osStatus_t osstat = osMessageQueueGet(rcv_queue, &buf, 0, (1000 / OUTPUT_RATE ) * 1.1);
+        osStatus_t osstat = osMessageQueueGet(rcv_queue, &buf, 0, (1000 / OUTPUT_RATE) * 1.1);
         if (osstat != osOK)
         {
             DEBUG_PRINT(" GPS Something went wrong with Communication...\n");

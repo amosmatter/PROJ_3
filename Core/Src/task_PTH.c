@@ -1,9 +1,3 @@
-/*
- * my_main.c
- *
- *  Created on: Nov 16, 2023
- *      Author: amosm
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include "cmsis_os2.h"

@@ -55,9 +55,9 @@ HAL_StatusTypeDef get_data(raw_airspeed_data_t *raw_data)
         return ret;
     }
 
-    raw_data->bridge = ((uint16_t)buf[0] << 8) | buf[1];
-    raw_data->temp = ((uint16_t)(buf[2] & 0x3F) << 8) | buf[3];
-    raw_data->flags = buf[2] >> 6;
+    raw_data->bridge = ((uint16_t)(buf[0]& 0x3F ) << 8) | buf[1];
+    raw_data->temp = ((uint16_t)(buf[2]) << 8) | (buf[3]  );
+    raw_data->flags = buf[0] >> 6;
     return HAL_OK;
 }
 
@@ -79,15 +79,16 @@ double get_temperature_c(raw_airspeed_data_t *raw_data)
 void airspeed_task(void *pvParameters)
 {
     raw_airspeed_data_t raw_data;
-    airspeed_data_t data;
+    airspeed_data_t data ;
     osEventFlagsSet(init_events, ev_init_airsp);
+
     while (1)
     {
         osEventFlagsWait(timing_events, ev_rcv_airsp, osFlagsWaitAll, osWaitForever);
         get_data(&raw_data);                         // request measurement
-
         for (int i = 0; i < AIRSPEED_N_RETRIES; i++)
         {
+            osDelay(50);
             HAL_StatusTypeDef ret = get_data(&raw_data); // get measurement
             if (ret != HAL_OK)
             {
@@ -104,10 +105,11 @@ void airspeed_task(void *pvParameters)
                 DEBUG_PRINT("Fault detected!\n");
                 continue;
             }
+            data.d_pressure = get_pressure_pascals(&raw_data);
+            data.temp = get_temperature_c(&raw_data);
+            osMessageQueuePut(airsp_data_queue_handle, &data, 0, 0);
             break;
         }
-        data.d_pressure = get_pressure_pascals(&raw_data);
-        data.temp = get_temperature_c(&raw_data);
-        osMessageQueuePut(airsp_data_queue_handle, &data, 0, 0);
+
     }
 }

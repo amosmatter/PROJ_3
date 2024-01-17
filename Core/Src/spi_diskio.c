@@ -38,8 +38,6 @@ extern SPI_HandleTypeDef SPI;
 
 /* Function prototypes */
 
-//TODO make a more unified SPI clk rate selection
-
 //(Note that the _256 is used as a mask to clear the prescalar bits as it provides binary 111 in the correct position)
 #define FCLK_SLOW()                                                                           \
 	{                                                                                         \

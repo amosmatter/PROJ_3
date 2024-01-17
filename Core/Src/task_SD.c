@@ -25,7 +25,14 @@ int write_str(FIL *buffer, const char *val)
 int write_dbl(FIL *buffer, double val)
 {
     char buf[32];
-    snprintf(buf, 32, "%+.8+e;\t", val);
+    if (!isfinite(val))
+    {
+        snprintf(buf, 32, "\t;\t");
+    }
+    else
+    {
+        snprintf(buf, 32, "%+.8+e;\t", val);
+    }
     return write_str(buffer, buf);
 }
 int write_timestamp(FIL *buffer, struct tm *time, uint32_t ms) // Write UTC integer timestamp
@@ -65,7 +72,7 @@ void write_line(FIL *buffer, csv_dump_data_t *data)
     write_dbl(buffer, data->roll / M_PI * 180);
     write_dbl(buffer, data->yaw / M_PI * 180);
     write_dbl(buffer, data->energy);
-    write_dbl(buffer, 0.0);
+    write_dbl(buffer, data->d_energy);
 
     write_str(buffer, "\r\n");
 }
@@ -82,7 +89,7 @@ void closing_task(void *pvParameters)
     osEventFlagsWait(general_events, ev_request_restart, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
     osMutexAcquire(SPI_Task_Mutex, osWaitForever);
     FRESULT res = -1;
-    while(res != FR_OK)
+    while (res != FR_OK)
     {
         res = f_close(file);
     }
@@ -98,7 +105,6 @@ void SD_task(void *pvParameters)
     FATFS fs;
     FIL file;
 
-    // imu and pth share the spi bus so allow them to go first
     osMutexAcquire(SPI_Task_Mutex, osWaitForever);
     uint32_t ctr = 0;
 

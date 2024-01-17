@@ -13,7 +13,7 @@
 #include "minmea-master/minmea.h"
 
 #define BIT(n) (1UL << (n))
-#define OUTPUT_RATE 10
+#define OUTPUT_RATE 1
 
 extern osThreadId_t PTH_TaskHandle;
 extern osThreadId_t IMU_TaskHandle;
@@ -86,6 +86,7 @@ typedef struct
   double latitude;
   double longitude;
   double ground_speed;
+  int fix_quality;
 } gps_data_t;
 
 #define GPS_DATA_SIZE (sizeof(gps_data_t))
@@ -100,8 +101,8 @@ typedef struct bme280_data PTH_data_t;
 
 typedef struct
 {
-  uint32_t d_pressure;
-  uint32_t temp;
+  double d_pressure;
+  double temp;
 } airspeed_data_t;
 
 #define AIRSPEED_DATA_SIZE (sizeof(airspeed_data_t))
@@ -141,6 +142,7 @@ typedef struct
   double pitch;         
   double yaw;           
   double energy;        
+  double d_energy;
 } csv_dump_data_t;
 
 

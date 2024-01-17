@@ -10,15 +10,13 @@ void get_time(struct tm *localtime, uint32_t *ms);
 time_t get_swiss_tz_offset(int month, int day, int weekday);
 
 
-#ifndef FCPU
-#warning FCPU not defined. Assuming 8MHz
-#define FCPU (48000000)
-#endif
 
+#define FCPU (16000000)
+
+// Next 3 Funcions are from  
 // This macro does the conversion from us to the number of
 // iterations to do by the busywait-routine
 #define DELAY_MICROSECONDS(us) ((us) * (FCPU/(4*1000000))-2)
-
 
 /**
  * Does a busy-wait during given value val.

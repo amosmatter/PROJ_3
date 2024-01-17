@@ -49,7 +49,7 @@ sys_time_t get_sys_time()
     sys_time_t sys_time;
 
     osMessageQueueGet(time_q, &sys_time, 0, osWaitForever);
-    osMessageQueuePut(time_q, &sys_time, 0, 0); // TODO: this is a hack, switch to freertos version
+    osMessageQueuePut(time_q, &sys_time, 0, 0);
     return sys_time;
 }
 

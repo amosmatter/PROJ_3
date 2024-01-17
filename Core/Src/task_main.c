@@ -108,6 +108,16 @@ void main_task(void *pvParameters)
     }
     osEventFlagsWait(general_events, ev_power_ok, osFlagsNoClear, osWaitForever);
 
+    for (int i = 0; i < 20; i++)
+    {
+    	DEBUG_PRINT("\n");
+    }
+    for (int i = 0; i < 100; i++)
+    {
+    	DEBUG_PRINT("-");
+    }
+
+    DEBUG_PRINT("\nStarting Program...\n");
     init_time();
     SPI_Lock = osMutexNew(NULL);       // Mutex for SPI bus because it's shared
     SPI_Task_Mutex = osMutexNew(NULL); // Mutex for SPI Tasks because *some* don't behave properly when just locking the bus itself
