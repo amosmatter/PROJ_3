@@ -139,12 +139,12 @@ void PTH_task(void *pvParameters)
     rslt = bme280_cal_meas_delay(&period, &settings);
     bme280_error_codes_print_result("bme280_cal_meas_delay", rslt);
 
-    printf("\nHumidity calculation (Data displayed are compensated values)\r\n");
-    printf("Measurement time : %lu us\r\n\n", (long unsigned int)period);
+    DEBUG_PRINT("\nHumidity calculation (Data displayed are compensated values)\r\n");
+    DEBUG_PRINT("Measurement time : %lu us\r\n\n", (long unsigned int)period);
 
     if (period / 1000 + 20 > 1000 / OUTPUT_RATE)
     {
-        printf("Output Rate too high for PTH settings!!");
+        DEBUG_PRINT("Output Rate too high for PTH settings!!");
         osThreadTerminate(NULL);
         return;
     }

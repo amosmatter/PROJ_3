@@ -117,7 +117,7 @@ void main_task(void *pvParameters)
     	DEBUG_PRINT("-");
     }
 
-    DEBUG_PRINT("\nStarting Program...\n");
+    printf("\nStarting Program...\n");
     init_time();
     SPI_Lock = osMutexNew(NULL);       // Mutex for SPI bus because it's shared
     SPI_Task_Mutex = osMutexNew(NULL); // Mutex for SPI Tasks because *some* don't behave properly when just locking the bus itself
@@ -146,11 +146,12 @@ void main_task(void *pvParameters)
         uint32_t ret = osEventFlagsWait(init_events, ev_init_all, osFlagsWaitAll | osFlagsNoClear, 1000);
         HAL_GPIO_TogglePin(LED_READY_GPIO_Port, LED_READY_Pin);
 
-        if (0 >= *(int32_t *)&ret)
+        if (ev_init_all == ret)
         {
             break;
         }
     }
+    printf("\nInitialized everything...\n");
 
     for (;;)
     {

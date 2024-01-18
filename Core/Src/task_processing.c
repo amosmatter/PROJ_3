@@ -12,7 +12,7 @@
 #include "system_time.h"
 
 #define OUTPUT_PERIOD (1000 / OUTPUT_RATE)
-#define SENSOR_OVERHEAD (60)
+#define SENSOR_OVERHEAD (300)
 
 double get_energy(double velocity, double height)
 {
@@ -83,9 +83,8 @@ void processing_task(void *pvParameters)
 		{
 			got_gps = osMessageQueueGet(gps_data_queue_handle, &gps_data, 0, SENSOR_OVERHEAD); // while waiting here, the sensors should be sending data
 		}
-
-		got_pth = osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 0);
 		got_imu = osMessageQueueGet(imu_data_queue_handle, &imu_data, 0, 0);
+		got_pth = osMessageQueueGet(pth_data_queue_handle, &pth_data, 0, 0);
 		got_airspeed = osMessageQueueGet(airsp_data_queue_handle, &airspeed_data, 0, 0);
 
 		if (got_gps==osOK && gps_data.fix_quality != 0)

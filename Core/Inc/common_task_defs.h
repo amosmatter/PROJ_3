@@ -15,6 +15,29 @@
 #define BIT(n) (1UL << (n))
 #define OUTPUT_RATE 1
 
+// #ifndef DEBUG_MODE
+// #define DEBUG_MODE
+// #endif
+
+#ifdef DEBUG_MODE
+#define DEBUG_PRINT(...) \
+  {                      \
+    printf(__VA_ARGS__); \
+  }
+
+#define DEBUG_TRIGGER()                                                            \
+  {                                                                                \
+    HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_SET);   \
+    HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_RESET); \
+  }
+#else
+#define DEBUG_PRINT(...) \
+  {                      \
+  }
+#define DEBUG_TRIGGER()
+
+#endif
+
 extern osThreadId_t PTH_TaskHandle;
 extern osThreadId_t IMU_TaskHandle;
 extern osThreadId_t GPS_TaskHandle;
@@ -54,7 +77,7 @@ enum e_timing_events
   ev_rcv_imu = BIT(0),
   ev_rcv_pth = BIT(1),
   ev_rcv_airsp = BIT(2),
-  ev_rcv_all = ev_rcv_imu | ev_rcv_pth |  ev_rcv_airsp
+  ev_rcv_all = ev_rcv_imu | ev_rcv_pth | ev_rcv_airsp
 };
 
 extern osEventFlagsId_t timing_events;
@@ -67,8 +90,6 @@ enum e_general_events
 };
 
 extern osEventFlagsId_t general_events;
-
-
 
 typedef struct
 {
@@ -130,23 +151,20 @@ typedef struct
 typedef struct
 {
   uint32_t time_ms;
-  double hum;      
-  double v_ground; 
-  double v_air;    
-  double temp;     
-  double press;    
+  double hum;
+  double v_ground;
+  double v_air;
+  double temp;
+  double press;
   double longt;
   double lat;
-  double alt_rel_start; 
-  double roll;          
-  double pitch;         
-  double yaw;           
-  double energy;        
+  double alt_rel_start;
+  double roll;
+  double pitch;
+  double yaw;
+  double energy;
   double d_energy;
 } csv_dump_data_t;
-
-
-
 
 #define CSV_DUMP_DATA_SIZE (sizeof(csv_dump_data_t))
 #define CSV_DUMP_DATA_QUEUE_SIZE (10)

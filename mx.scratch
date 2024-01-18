@@ -3,7 +3,7 @@
   <FileVersion>3.0</FileVersion>
   <Workspace>
     <WorkspaceType>Single-project</WorkspaceType>
-    <WorkspacePath>C:\Users\amosm\STM32CubeIDE\workspace_1.13.0\PROJ_3\</WorkspacePath>
+    <WorkspacePath>C:\Users\amosm\STM32CubeIDE\workspace_1.14.0\PROJ_3\</WorkspacePath>
     <underRoot>true</underRoot>
     <TrustZone>0</TrustZone>
     <HAL_Driver>C:\Users\amosm\STM32Cube\Repository\STM32Cube_FW_U5_V1.4.0</HAL_Driver>

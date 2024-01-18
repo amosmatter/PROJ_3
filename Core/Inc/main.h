@@ -91,28 +91,6 @@ void Error_Handler(void);
 #define SW_ACTIVE_EXTI_IRQn EXTI8_IRQn
 
 /* USER CODE BEGIN Private defines */
-
-#ifndef DEBUG
-#define DEBUG
-#endif
-
-
-#ifdef DEBUG
-#define DEBUG_PRINT(...) { printf(__VA_ARGS__);}
-
-#define DEBUG_TRIGGER()                                                            \
-  {                                                                                \
-    HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_SET);   \
-    HAL_GPIO_WritePin(DEBUG_TRIGGER_GPIO_Port, DEBUG_TRIGGER_Pin, GPIO_PIN_RESET); \
-  }
-#else
-#define DEBUG_PRINT(...) {}
-#define DEBUG_TRIGGER()
-
-#endif
-
-
-
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

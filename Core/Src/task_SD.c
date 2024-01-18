@@ -15,7 +15,7 @@
 
 #define RETRIES 99
 #define RETRY_PERIOD 20
-#define F_SYNC_INTERVAL 100
+#define F_SYNC_INTERVAL 5 // The higher this is, the faster the "Power fail saving" will have to be, but the less writes are done on the SD card.
 
 int write_str(FIL *buffer, const char *val)
 {
@@ -54,26 +54,38 @@ int write_timestamp(FIL *buffer, struct tm *time, uint32_t ms) // Write UTC inte
 
 void write_line(FIL *buffer, csv_dump_data_t *data)
 {
-    DEBUG_PRINT("Writing CSV line:\t");
-
     struct tm t;
     uint32_t ms;
+    DEBUG_PRINT("\n\n\n");
     get_time(&t, &ms);
+    DEBUG_PRINT("Time:          ");
     write_timestamp(buffer, &t, ms);
+    DEBUG_PRINT("\nHumidity:    ");
     write_dbl(buffer, data->hum);
+    DEBUG_PRINT("\nGroundspeed: ");
     write_dbl(buffer, data->v_ground);
+    DEBUG_PRINT("\nAirspeed:    ");
     write_dbl(buffer, data->v_air);
+    DEBUG_PRINT("\nTemperature: ");
     write_dbl(buffer, data->temp);
+    DEBUG_PRINT("\nPressure:    ");
     write_dbl(buffer, data->press);
+    DEBUG_PRINT("\nLongtitude:  ");
     write_dbl(buffer, data->longt);
+    DEBUG_PRINT("\nLatitude:    ");
     write_dbl(buffer, data->lat);
+    DEBUG_PRINT("\nRel.Alt:     ");
     write_dbl(buffer, data->alt_rel_start);
+    DEBUG_PRINT("\nPitch:       ");
     write_dbl(buffer, data->pitch / M_PI * 180);
+    DEBUG_PRINT("\nRoll:        ");
     write_dbl(buffer, data->roll / M_PI * 180);
+    DEBUG_PRINT("\nYaw:         ");
     write_dbl(buffer, data->yaw / M_PI * 180);
+    DEBUG_PRINT("\nEnergy:      ");
     write_dbl(buffer, data->energy);
+    DEBUG_PRINT("\nEnergy Rate: ");
     write_dbl(buffer, data->d_energy);
-
     write_str(buffer, "\r\n");
 }
 
@@ -93,7 +105,7 @@ void closing_task(void *pvParameters)
     {
         res = f_close(file);
     }
-    DEBUG_PRINT("Closed SD File, Restarting Now!\n");
+    printf("Closed SD File, Restarting Now!\n");
     HAL_NVIC_SystemReset();
 }
 
@@ -245,6 +257,8 @@ void SD_task(void *pvParameters)
             ctr = 0;
         }
         osMutexRelease(SPI_Task_Mutex);
+        DEBUG_PRINT("lines buffered: %lu\n",ctr);
+
     }
 
     osMutexAcquire(SPI_Task_Mutex, osWaitForever);
