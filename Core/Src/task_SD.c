@@ -15,7 +15,7 @@
 
 #define RETRIES 99
 #define RETRY_PERIOD 20
-#define F_SYNC_INTERVAL 5 // The higher this is, the faster the "Power fail saving" will have to be, but the less writes are done on the SD card.
+#define F_SYNC_INTERVAL 20 // The higher this is, the faster the "Power fail saving" will have to be, but the less writes are done on the SD card.
 
 int write_str(FIL *buffer, const char *val)
 {

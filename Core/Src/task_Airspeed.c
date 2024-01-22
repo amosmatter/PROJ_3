@@ -20,7 +20,7 @@
 #define T_SCALE ((1 << 11) - 1)
 #define T_OFFS (0)
 
-#define AIRSPEED_N_RETRIES 5
+#define AIRSPEED_N_RETRIES 1 // maybe set higher if works properly
 
 #define ERR_NO_SENSOR 5
 
@@ -76,6 +76,26 @@ HAL_StatusTypeDef get_data(raw_airspeed_data_t *raw_data)
 {
     uint8_t buf[4];
     HAL_StatusTypeDef ret;
+    ret = HAL_I2C_Master_Receive(&I2C, ADDRESS, buf, 4, 100);
+    if (ret != HAL_OK)
+    {
+        raw_data->flags = 3;
+        return ret;
+    }
+
+    raw_data->bridge = ((uint16_t)(buf[0]& 0x3F ) << 8) | buf[1];
+    raw_data->temp = ((uint16_t)(buf[2]) << 8) | (buf[3]  );
+    raw_data->flags = buf[0] >> 6;
+    return HAL_OK;
+}
+
+
+
+HAL_StatusTypeDef get_data_it(raw_airspeed_data_t *raw_data) // Haven't tested this version but would arguably be more efficient
+{
+    uint8_t buf[4];
+    HAL_StatusTypeDef ret;
+
     ret = HAL_I2C_Master_Receive_IT(&I2C, ADDRESS, buf, 4);
     if (ret != HAL_OK)
     {
@@ -88,7 +108,7 @@ HAL_StatusTypeDef get_data(raw_airspeed_data_t *raw_data)
     	return ERR_NO_SENSOR;
     }
 
-    if (flgs& (BIT(31) | ev_got_trash ))
+    if (flgs & (BIT(31) | ev_got_trash ))
     {
     	return HAL_ERROR;
     }
@@ -113,8 +133,6 @@ double get_temperature_c(raw_airspeed_data_t *raw_data)
 {
     return ((raw_data->temp - T_OFFS) * ((T_MAX - T_MIN) / (T_SCALE - 2.0 * T_OFFS)) + T_MIN) / 100.0;
 }
-
-
 
 
 void airspeed_task(void *pvParameters)

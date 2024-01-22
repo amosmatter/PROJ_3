@@ -68,6 +68,7 @@ uint16_t calculate_crc(uint16_t *data, size_t length)// From ChatGPT
 
     return crc;
 }
+
 void comm_rpi_task(void *pvParameters)
 {
     osEventFlagsWait(init_events, ev_init_in, osFlagsWaitAll | osFlagsNoClear, osWaitForever);
@@ -83,9 +84,10 @@ void comm_rpi_task(void *pvParameters)
         sec <<= 15;
 
         // Alternative, if sub second accuracy is needed for example with 10Hz sampling
-        // uint32_t  tim = ms + timeinfo.tm_sec * 1000 + timeinfo.tm_min * 60 * 1000 + timeinfo.tm_hour * 3600 * 1000;
+        // uint64_t  tim = ms + timeinfo.tm_sec * 1000 + timeinfo.tm_min * 60 * 1000 + timeinfo.tm_hour * 3600 * 1000;
         // tim <<= 15;
         // tim /= 1000;
+        // sec = (uint32_t) tim;
 
         rpi_tx_structured_data_t rpi_out_data = {
             .time = sec,

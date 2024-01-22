@@ -15,9 +15,9 @@
 #define BIT(n) (1UL << (n))
 #define OUTPUT_RATE 1
 
-// #ifndef DEBUG_MODE
-// #define DEBUG_MODE
-// #endif
+#ifndef DEBUG_MODE
+#define DEBUG_MODE
+#endif
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(...) \
